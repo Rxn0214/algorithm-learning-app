@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { agents } from '../data/lessons'
 import { useLessonStore } from '../stores/lesson'
 import { api } from '../services/api'
+import { generateLocalReply } from '../data/knowledge_base'
 
 const route = useRoute()
 const router = useRouter()
@@ -44,19 +45,12 @@ async function sendMessage() {
     })
     chatMessages.value.push({ type: 'agent', content: data.reply })
   } catch (e) {
-    // Fallback: local reply
-    const reply = generateLocalReply(msg, agentType.value)
+    // 离线模式：使用本地知识库
+    const reply = generateLocalReply(msg, agentType.value, currentLessonId.value)
     chatMessages.value.push({ type: 'agent', content: reply })
   } finally {
     isTyping.value = false
   }
-}
-
-function generateLocalReply(question, type) {
-  const replies = type === 'guider'
-    ? [`关于"${question}"，我来帮你规划学习路径～`, `好的，我们来学习相关内容吧！`, `这个问题很重要，我来帮你梳理思路～`]
-    : [`让我来帮你分析"${question}"这个问题～`, `理解这个问题的关键是...`, `我来给你详细讲解相关知识。`]
-  return replies[question.length % replies.length]
 }
 
 function handleKeydown(e) {
