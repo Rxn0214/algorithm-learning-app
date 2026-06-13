@@ -1,67 +1,70 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { api } from '../services/api'
+
+const POSTS_KEY = 'forum_posts'
+
+function loadPosts() {
+  try {
+    const saved = localStorage.getItem(POSTS_KEY)
+    if (saved) return JSON.parse(saved)
+  } catch { /* ignore */ }
+  return getDefaultPosts()
+}
+
+function savePosts(posts) {
+  try { localStorage.setItem(POSTS_KEY, JSON.stringify(posts)) } catch { /* ignore */ }
+}
 
 export const useForumStore = defineStore('forum', () => {
-  const posts = ref([])
+  const posts = ref(loadPosts())
   const stats = ref({ members: 45, topScore: 5680 })
   const loading = ref(false)
 
-  async function fetchPosts() {
+  function fetchPosts() {
     loading.value = true
-    try {
-      const { data } = await api.get('/api/forum')
-      posts.value = data.posts || []
-      if (data.stats) stats.value = data.stats
-    } catch (e) {
-      console.warn('Failed to fetch posts', e)
-      if (posts.value.length === 0) {
-        posts.value = getDefaultPosts()
-      }
-    } finally {
-      loading.value = false
-    }
+    // 已从 localStorage 加载，模拟短暂加载状态
+    setTimeout(() => { loading.value = false }, 300)
   }
 
-  async function publishPost(content, userName) {
-    try {
-      const { data } = await api.post('/api/forum', { content, author: userName })
-      posts.value.unshift(data.post)
-      return true
-    } catch (e) {
-      // Fallback to local
-      posts.value.unshift({
-        id: Date.now(),
-        avatar: userName.charAt(0),
-        author: userName,
-        time: '刚刚',
-        content,
-        likes: 0,
-        replies: 0,
-        liked: false
-      })
-      return true
+  function publishPost(content, userName) {
+    const newPost = {
+      id: Date.now(),
+      avatar: userName.charAt(0),
+      author: userName,
+      time: '刚刚',
+      content,
+      likes: 0,
+      replies: 0,
+      liked: false
     }
+    posts.value.unshift(newPost)
+    savePosts(posts.value)
+    return true
   }
 
-  async function toggleLike(postId, index) {
-    try {
-      await api.post(`/api/forum/${postId}/like`)
-    } catch (e) { /* ignore */ }
+  function toggleLike(postId, index) {
     const post = posts.value[index]
     if (post) {
       post.liked = !post.liked
       post.likes += post.liked ? 1 : -1
+      savePosts(posts.value)
     }
   }
 
-  async function addReply(postId, content, userName) {
-    try {
-      const { data } = await api.post(`/api/forum/${postId}/reply`, { content, author: userName })
-      return data.reply
-    } catch (e) {
-      return { id: Date.now(), author: userName, content, time: '刚刚' }
+  function addReply(postId, content, userName) {
+    const post = posts.value.find(p => p.id === postId)
+    if (post) {
+      post.replies = (post.replies || 0) + 1
+      // 保存回复到 localStorage
+      const repliesKey = `forum_replies_${postId}`
+      try {
+        const replies = JSON.parse(localStorage.getItem(repliesKey) || '[]')
+        replies.push({ id: Date.now(), author: userName, content, time: '刚刚' })
+        localStorage.setItem(repliesKey, JSON.stringify(replies))
+      } catch { /* ignore */ }
+      savePosts(posts.value)
     }
+    return { id: Date.now(), author: userName, content, time: '刚刚' }
   }
 
   function getDefaultPosts() {
