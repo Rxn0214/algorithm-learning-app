@@ -3,7 +3,6 @@ import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useLessonStore } from '../stores/lesson'
 import { lessons } from '../data/lessons'
-import { api } from '../services/api'
 import AppHeader from '../components/AppHeader.vue'
 import NavBar from '../components/NavBar.vue'
 
@@ -55,17 +54,8 @@ function submitAnswer(qIndex) {
   }
   if (correct) {
     lessonProgress.value = Math.min(100, lessonProgress.value + 10)
-  } else {
-    // 保存错题到后端
-    api.post('/api/wrong-answers', {
-      lesson_id: currentLesson.value.id,
-      lesson_title: currentLesson.value.title,
-      question: q.text,
-      user_answer: q.options[selected],
-      correct_answer: q.options[q.answer],
-      question_type: q.type
-    }).catch(() => {})
   }
+  // 错题已由 lessonStore.submitAnswer 自动保存到 localStorage
 }
 
 function startChat(agentType) {
