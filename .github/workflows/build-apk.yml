@@ -16,7 +16,10 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
+
+      - name: Install root dependencies (including Capacitor)
+        run: npm install
 
       - name: Install frontend dependencies
         run: |
@@ -36,9 +39,6 @@ jobs:
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
-
-      - name: Install Capacitor
-        run: npm install @capacitor/core @capacitor/cli @capacitor/android
 
       - name: Add Android platform
         run: npx cap add android
