@@ -25,6 +25,22 @@ onMounted(() => {
   }
 })
 
+// 快速检测后端是否可用（超时2秒）
+let _backendAlive = null
+async function checkBackend() {
+  if (_backendAlive !== null) return _backendAlive
+  try {
+    const ctrl = new AbortController()
+    setTimeout(() => ctrl.abort(), 800)
+    const res = await fetch('/api/health', { signal: ctrl.signal })
+    _backendAlive = res.ok
+    return _backendAlive
+  } catch {
+    _backendAlive = false
+    return false
+  }
+}
+
 async function sendMessage() {
   if (!chatInput.value.trim()) return
 
@@ -33,24 +49,33 @@ async function sendMessage() {
   chatInput.value = ''
   isTyping.value = true
 
-  try {
-    const { data } = await api.post('/api/chat', {
-      message: msg,
-      agent_type: agentType.value,
-      lesson_id: currentLessonId.value,
-      history: chatMessages.value.slice(-10).map(m => ({
-        role: m.type === 'user' ? 'user' : 'assistant',
-        content: m.content
-      }))
-    })
-    chatMessages.value.push({ type: 'agent', content: data.reply })
-  } catch (e) {
-    // 离线模式：使用本地知识库
-    const reply = generateLocalReply(msg, agentType.value, currentLessonId.value)
-    chatMessages.value.push({ type: 'agent', content: reply })
-  } finally {
-    isTyping.value = false
+  // 先检查后端是否可用
+  const backendUp = await checkBackend()
+
+  if (backendUp) {
+    try {
+      const { data } = await api.post('/api/chat', {
+        message: msg,
+        agent_type: agentType.value,
+        lesson_id: currentLessonId.value,
+        history: chatMessages.value.slice(-10).map(m => ({
+          role: m.type === 'user' ? 'user' : 'assistant',
+          content: m.content
+        }))
+      })
+      chatMessages.value.push({ type: 'agent', content: data.reply })
+      isTyping.value = false
+      return
+    } catch (e) {
+      // API 失败，降级到本地
+    }
   }
+
+  // 离线/降级模式：直接使用本地知识库
+  await new Promise(r => setTimeout(r, 300)) // 模拟思考过程
+  const reply = generateLocalReply(msg, agentType.value, currentLessonId.value)
+  chatMessages.value.push({ type: 'agent', content: reply })
+  isTyping.value = false
 }
 
 function handleKeydown(e) {
