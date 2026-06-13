@@ -1,7 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { lessons as lessonData } from '../data/lessons'
-import { api } from '../services/api'
 
 const PROGRESS_KEY = 'lesson_progress'
 
@@ -112,30 +111,19 @@ export const useLessonStore = defineStore('lesson', () => {
     return { correct, correctAnswer: question.answer, explanation: question.explanation }
   }
 
-  async function fetchProgress() {
-    try {
-      const { data } = await api.get('/api/progress')
-    } catch (e) { /* offline */ }
+  function fetchProgress() {
+    // 离线模式：进度已从 localStorage 加载
   }
 
-  async function updateProgress(lessonId, pct) {
+  function updateProgress(lessonId, pct) {
     updateLessonProgress(lessonId, pct)
-    try {
-      await api.put(`/api/progress/${lessonId}`, { progress: pct })
-    } catch (e) { /* offline */ }
   }
 
-  async function fetchWrongAnswers() {
-    // 先从 localStorage 加载
+  function fetchWrongAnswers() {
     try {
       const saved = JSON.parse(localStorage.getItem('wrong_answers') || '[]')
       wrongAnswers.value = saved
     } catch { wrongAnswers.value = [] }
-    // 再从后端加载
-    try {
-      const { data } = await api.get('/api/wrong-answers')
-      if (data && data.length) wrongAnswers.value = data
-    } catch (e) { /* offline */ }
   }
 
   return {
