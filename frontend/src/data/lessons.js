@@ -1,0 +1,265 @@
+export const lessons = [
+  {
+    id: 1,
+    icon: '算',
+    title: '2.1.1 算法的概念',
+    desc: '理解算法的定义和本质特征',
+    bg: 'linear-gradient(135deg, #667EEA 0%, #764BA2 100%)',
+    status: 'status-completed',
+    statusText: '已完成',
+    knowledgePoints: [
+      { title: '算法的定义', content: '算法是解决特定问题的步骤和方法，是计算机程序的核心。一个算法由一系列明确的操作指令组成，这些指令按照一定的顺序执行，最终解决问题。' },
+      { title: '算法的本质', content: '算法本质上是一种解决问题的思路和逻辑，它不依赖于具体的编程语言，可以用多种方式来描述。同一个问题可以有多种不同的算法。' }
+    ],
+    questions: [
+      {
+        type: '选择题', typeClass: 'type-choice',
+        text: '下列关于算法的说法，正确的是？',
+        options: ['算法只能用计算机语言描述', '算法必须有输出', '算法可以无限循环', '算法不需要明确步骤'],
+        answer: 1,
+        explanation: '算法必须有一个或多个输出，这是算法的基本特征之一。算法可以用自然语言、流程图等多种方式描述，不限于计算机语言。'
+      },
+      {
+        type: '填空题', typeClass: 'type-fill',
+        text: '算法是解决特定问题的____和____。',
+        answer: '步骤 方法',
+        explanation: '算法被定义为解决特定问题的步骤和方法。'
+      }
+    ]
+  },
+  {
+    id: 2,
+    icon: '特',
+    title: '2.1.2 算法的特征',
+    desc: '掌握算法的五大特征',
+    bg: 'linear-gradient(135deg, #F093FB 0%, #F5576C 100%)',
+    status: 'status-completed',
+    statusText: '已完成',
+    knowledgePoints: [
+      { title: '有穷性', content: '算法必须在有限步骤内结束，不能无限循环下去。这是算法与程序的重要区别之一。' },
+      { title: '确定性', content: '算法的每一步都必须有明确的定义，不能有歧义。同样的输入必须产生同样的输出。' },
+      { title: '可行性', content: '算法的每一步都必须是可行的，可以通过有限次操作完成。' },
+      { title: '输入与输出', content: '算法有零个或多个输入，有一个或多个输出。输入是算法开始前给出的量，输出是算法产生的结果。' }
+    ],
+    questions: [
+      {
+        type: '选择题', typeClass: 'type-choice',
+        text: '算法的哪个特征保证了算法不会无限执行？',
+        options: ['确定性', '有穷性', '可行性', '输入'],
+        answer: 1,
+        explanation: '有穷性是指算法必须在有限步骤内结束，这保证了算法不会无限循环执行下去。'
+      },
+      {
+        type: '分析题', typeClass: 'type-analysis',
+        text: '请举例说明算法的确定性特征。',
+        answer: '例如"计算圆的面积"算法：输入半径r，计算π×r²，输出结果。每一步都是确定的，不会产生歧义。',
+        explanation: '确定性要求算法的每一步都有明确的定义。比如"将两个数相加"就是确定的，而"计算一个较大的数"则是不确定的。'
+      }
+    ]
+  },
+  {
+    id: 3,
+    icon: '描',
+    title: '2.2.1 算法的描述',
+    desc: '学习三种算法描述方法',
+    bg: 'linear-gradient(135deg, #4FACFE 0%, #00F2FE 100%)',
+    status: 'status-progress',
+    statusText: '进行中',
+    knowledgePoints: [
+      { title: '自然语言描述', content: '用日常语言描述算法步骤，通俗易懂但可能有歧义。适合描述简单算法，对于复杂算法可能不够清晰。' },
+      { title: '流程图描述', content: '用图形符号表示算法，直观清晰，适合表达复杂逻辑。流程图可以清晰地展示算法的执行流程和分支结构。' },
+      { title: '伪代码描述', content: '介于自然语言和编程语言之间，结构清晰且易于转换为代码。伪代码使用程序设计语言的逻辑结构，但语法更自由。' }
+    ],
+    questions: [
+      {
+        type: '选择题', typeClass: 'type-choice',
+        text: '描述算法时，最直观的方法是？',
+        options: ['自然语言', '流程图', '伪代码', '二进制'],
+        answer: 1,
+        explanation: '流程图用图形符号表示算法步骤，直观清晰，特别适合表达复杂的逻辑结构。'
+      },
+      {
+        type: '编程题', typeClass: 'type-code',
+        text: '用伪代码描述"判断一个数是否为偶数"的算法。',
+        answer: '输入：一个整数n\n如果 n % 2 == 0 则\n  输出"是偶数"\n否则\n  输出"是奇数"',
+        explanation: '判断偶数的关键是检查该数除以2的余数是否为0。'
+      }
+    ]
+  },
+  {
+    id: 4,
+    icon: '流',
+    title: '2.2.2 流程图基础',
+    desc: '认识流程图符号，绘制流程图',
+    bg: 'linear-gradient(135deg, #43E97B 0%, #38F9D7 100%)',
+    status: 'status-progress',
+    statusText: '进行中',
+    knowledgePoints: [
+      { title: '流程图符号', content: '起止框（椭圆）表示开始和结束；处理框（矩形）表示操作步骤；判断框（菱形）表示条件判断；输入输出框（平行四边形）表示数据输入输出；流程线（箭头）表示执行顺序。' },
+      { title: '流程线', content: '用箭头表示执行顺序，必须有明确的方向。流程线是连接各个符号的纽带，决定了算法的执行路径。' }
+    ],
+    questions: [
+      {
+        type: '选择题', typeClass: 'type-choice',
+        text: '流程图中，表示处理步骤的符号是？',
+        options: ['椭圆', '矩形', '菱形', '平行四边形'],
+        answer: 1,
+        explanation: '矩形（处理框）用于表示算法中的处理步骤，如计算、赋值等操作。'
+      },
+      {
+        type: '填空题', typeClass: 'type-fill',
+        text: '流程图中，____符号用于表示输入输出操作。',
+        answer: '平行四边形',
+        explanation: '平行四边形（输入输出框）用于表示数据的输入或输出操作。'
+      }
+    ]
+  },
+  {
+    id: 5,
+    icon: '顺',
+    title: '2.3.1 顺序结构',
+    desc: '理解顺序结构的执行特点',
+    bg: 'linear-gradient(135deg, #FA709A 0%, #FEE140 100%)',
+    status: 'status-pending',
+    statusText: '未开始',
+    knowledgePoints: [
+      { title: '顺序结构特点', content: '语句按顺序依次执行，是最基本的程序结构。从第一条语句开始，逐条执行，直到最后一条。' },
+      { title: '执行流程', content: '顺序结构的执行流程是一条直线：先执行语句1，再执行语句2，再执行语句3……直到所有语句执行完毕。' }
+    ],
+    questions: [
+      {
+        type: '选择题', typeClass: 'type-choice',
+        text: '以下哪种结构是程序的基本结构？',
+        options: ['顺序结构', '树形结构', '网络结构', '图形结构'],
+        answer: 0,
+        explanation: '顺序结构是程序最基本的控制结构，程序默认按照代码的书写顺序依次执行。'
+      },
+      {
+        type: '分析题', typeClass: 'type-analysis',
+        text: '说明顺序结构的执行特点。',
+        answer: '顺序结构的特点是语句按照书写顺序从上到下依次执行，前面的语句执行完才能执行后面的语句，没有分支和跳转。',
+        explanation: '顺序结构是最简单的程序结构，理解顺序结构是学习分支和循环结构的基础。'
+      }
+    ]
+  },
+  {
+    id: 6,
+    icon: '分',
+    title: '2.3.2 分支结构',
+    desc: '掌握条件判断和分支执行',
+    bg: 'linear-gradient(135deg, #A18CD1 0%, #FBC2EB 100%)',
+    status: 'status-pending',
+    statusText: '未开始',
+    knowledgePoints: [
+      { title: '分支结构概念', content: '根据条件判断结果选择不同的执行路径。如果条件为真，执行一个分支；如果条件为假，执行另一个分支。' },
+      { title: '条件表达式', content: '产生布尔值（真/假）的表达式，决定执行哪个分支。常见的条件表达式包括比较运算（>、<、==等）和逻辑运算（and、or、not）。' }
+    ],
+    questions: [
+      {
+        type: '选择题', typeClass: 'type-choice',
+        text: 'if-else语句属于哪种程序结构？',
+        options: ['顺序结构', '分支结构', '循环结构', '跳转结构'],
+        answer: 1,
+        explanation: 'if-else语句根据条件判断结果选择执行不同的代码块，是典型的分支结构。'
+      },
+      {
+        type: '编程题', typeClass: 'type-code',
+        text: '用伪代码描述"比较两个数大小"的算法。',
+        answer: '输入：两个数a和b\n如果 a > b 则\n  输出 a + "大于" + b\n否则如果 a < b 则\n  输出 a + "小于" + b\n否则\n  输出 a + "等于" + b',
+        explanation: '比较两个数的大小需要用到分支结构，分别处理大于、小于和等于三种情况。'
+      }
+    ]
+  },
+  {
+    id: 7,
+    icon: '循',
+    title: '2.3.3 循环结构',
+    desc: '理解for和while循环的应用',
+    bg: 'linear-gradient(135deg, #FF9A9E 0%, #FECFEF 100%)',
+    status: 'status-pending',
+    statusText: '未开始',
+    knowledgePoints: [
+      { title: 'for循环', content: '适合已知循环次数的情况，由初始化、条件判断、变量更新三部分组成。常用于遍历数组或执行固定次数的操作。' },
+      { title: 'while循环', content: '适合未知循环次数的情况，只要条件为真就继续执行。常用于需要根据某种条件控制循环的场景。' }
+    ],
+    questions: [
+      {
+        type: '选择题', typeClass: 'type-choice',
+        text: '适合遍历数组的循环是？',
+        options: ['while循环', 'for循环', 'do-while循环', 'if循环'],
+        answer: 1,
+        explanation: 'for循环通常用于已知循环次数的情况，非常适合遍历数组，可以通过索引依次访问每个元素。'
+      },
+      {
+        type: '填空题', typeClass: 'type-fill',
+        text: 'for循环通常由____、____和____三部分组成。',
+        answer: '初始化 条件判断 变量更新',
+        explanation: 'for循环的三个组成部分：初始化（定义循环变量初始值）、条件判断（决定是否继续循环）、变量更新（改变循环变量的值）。'
+      }
+    ]
+  },
+  {
+    id: 8,
+    icon: '实',
+    title: '2.4 程序实现',
+    desc: '综合运用三种结构编写程序',
+    bg: 'linear-gradient(135deg, #FFECD2 0%, #FCB69F 100%)',
+    status: 'status-pending',
+    statusText: '未开始',
+    knowledgePoints: [
+      { title: '程序结构综合', content: '实际程序通常包含顺序、分支、循环三种结构的组合。掌握三种结构的配合使用是编程的关键。' },
+      { title: '调试技巧', content: '通过输出中间结果、设置断点等方式排查程序错误。调试是编程过程中非常重要的技能。' }
+    ],
+    questions: [
+      {
+        type: '分析题', typeClass: 'type-analysis',
+        text: '分析顺序、分支、循环三种结构在程序中的作用。',
+        answer: '顺序结构是程序的基础骨架，决定了代码的执行顺序；分支结构让程序能够根据不同条件做出不同反应；循环结构让程序能够重复执行特定任务。三种结构配合使用，可以解决任何复杂的编程问题。',
+        explanation: '这三种基本控制结构是结构化编程的三大支柱，任何程序都可以由这三种结构组合而成。'
+      },
+      {
+        type: '编程题', typeClass: 'type-code',
+        text: '用伪代码描述"计算阶乘"的算法。',
+        answer: '输入：正整数n\nresult = 1\nfor i = 1 to n:\n  result = result * i\n输出 result',
+        explanation: '阶乘n! = 1×2×3×...×n，可以用for循环将1到n的所有整数相乘得到结果。'
+      }
+    ]
+  }
+]
+
+export const badges = [
+  { icon: '🌟', name: '初学者', desc: '完成首次学习' },
+  { icon: '🔥', name: '勤奋者', desc: '连续学习7天' },
+  { icon: '🎯', name: '精准者', desc: '答题正确率90%+' },
+  { icon: '🏆', name: '学霸', desc: '完成全部课时' }
+]
+
+export const quickEntries = [
+  { name: '课程', icon: '📚', bg: 'linear-gradient(135deg, #667EEA 0%, #764BA2 100%)', route: '/lessons' },
+  { name: '助手', icon: '🤖', bg: 'linear-gradient(135deg, #F093FB 0%, #F5576C 100%)', route: '/agents' },
+  { name: '圈子', icon: '💬', bg: 'linear-gradient(135deg, #4FACFE 0%, #00F2FE 100%)', route: '/forum' },
+  { name: '我的', icon: '👤', bg: 'linear-gradient(135deg, #43E97B 0%, #38F9D7 100%)', route: '/profile' }
+]
+
+export const agents = {
+  guider: {
+    name: '引航',
+    type: 'guider',
+    avatar: '引',
+    avatarClass: 'agent-guider',
+    role: '学习引导者',
+    greeting: '嗨！我是引航，你的学习引导者～今天想学习哪部分内容呀？我可以帮你规划学习计划哦！',
+    desc: '负责新课导入、学习规划、进度鼓励、方法指导',
+    color: '#667EEA'
+  },
+  tutor: {
+    name: '辅智',
+    type: 'tutor',
+    avatar: '辅',
+    avatarClass: 'agent-tutor',
+    role: '答疑辅导者',
+    greeting: '你好！我是辅智，有什么问题尽管问我，我来帮你解答～',
+    desc: '负责知识点答疑、代码纠错、思路引导、习题讲解',
+    color: '#F5576C'
+  }
+}

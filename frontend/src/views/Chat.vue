@@ -1,0 +1,109 @@
+<script setup>
+import { ref, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { agents } from '../data/lessons'
+import { useLessonStore } from '../stores/lesson'
+import { api } from '../services/api'
+
+const route = useRoute()
+const router = useRouter()
+
+const agentType = ref(route.params.agentType || 'guider')
+const currentAgent = ref(agents.guider)
+const chatInput = ref('')
+const chatMessages = ref([])
+const isTyping = ref(false)
+const currentLessonId = ref(Number(route.query.lesson) || null)
+
+onMounted(() => {
+  const type = route.params.agentType
+  currentAgent.value = agents[type] || agents.guider
+  if (!currentLessonId.value) {
+    const lessonStore = useLessonStore()
+    currentLessonId.value = lessonStore.currentLessonId
+  }
+})
+
+async function sendMessage() {
+  if (!chatInput.value.trim()) return
+
+  const msg = chatInput.value
+  chatMessages.value.push({ type: 'user', content: msg })
+  chatInput.value = ''
+  isTyping.value = true
+
+  try {
+    const { data } = await api.post('/api/chat', {
+      message: msg,
+      agent_type: agentType.value,
+      lesson_id: currentLessonId.value,
+      history: chatMessages.value.slice(-10).map(m => ({
+        role: m.type === 'user' ? 'user' : 'assistant',
+        content: m.content
+      }))
+    })
+    chatMessages.value.push({ type: 'agent', content: data.reply })
+  } catch (e) {
+    // Fallback: local reply
+    const reply = generateLocalReply(msg, agentType.value)
+    chatMessages.value.push({ type: 'agent', content: reply })
+  } finally {
+    isTyping.value = false
+  }
+}
+
+function generateLocalReply(question, type) {
+  const replies = type === 'guider'
+    ? [`关于"${question}"，我来帮你规划学习路径～`, `好的，我们来学习相关内容吧！`, `这个问题很重要，我来帮你梳理思路～`]
+    : [`让我来帮你分析"${question}"这个问题～`, `理解这个问题的关键是...`, `我来给你详细讲解相关知识。`]
+  return replies[question.length % replies.length]
+}
+
+function handleKeydown(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault()
+    sendMessage()
+  }
+}
+</script>
+
+<template>
+  <div class="app-container" style="padding-bottom:0;">
+    <div class="chat-header">
+      <button class="back-btn" @click="router.back()">←</button>
+      <div :class="['agent-avatar', currentAgent.avatarClass]" style="width:36px;height:36px;font-size:16px;margin-right:12px;">
+        {{ currentAgent.avatar }}
+      </div>
+      <div>
+        <div style="font-size:16px;font-weight:600;">{{ currentAgent.name }}</div>
+        <div style="font-size:12px;opacity:0.8;">{{ currentAgent.role }}</div>
+      </div>
+    </div>
+
+    <div class="chat-container">
+      <div class="chat-messages" ref="messageList">
+        <div class="message agent">
+          <div class="message-text">{{ currentAgent.greeting }}</div>
+        </div>
+        <div v-for="(msg, index) in chatMessages" :key="index" :class="['message', msg.type]">
+          <div class="message-text">{{ msg.content }}</div>
+        </div>
+        <div v-if="isTyping" class="message agent">
+          <div class="typing-indicator">
+            <span class="typing-dot"></span>
+            <span class="typing-dot"></span>
+            <span class="typing-dot"></span>
+          </div>
+        </div>
+      </div>
+      <div class="chat-input">
+        <input v-model="chatInput" @keydown="handleKeydown" placeholder="输入消息...">
+        <button @click="sendMessage" :disabled="!chatInput.trim()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</template>

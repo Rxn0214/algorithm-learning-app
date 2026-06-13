@@ -1,0 +1,178 @@
+<script setup>
+import { ref, computed, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useLessonStore } from '../stores/lesson'
+import { lessons } from '../data/lessons'
+import { api } from '../services/api'
+import AppHeader from '../components/AppHeader.vue'
+import NavBar from '../components/NavBar.vue'
+
+const route = useRoute()
+const router = useRouter()
+const lessonStore = useLessonStore()
+
+const selectedAnswers = ref({})
+const feedback = ref({})
+const lessonProgress = ref(65)
+
+const currentLesson = computed(() => {
+  const id = Number(route.params.id)
+  return lessons.find(l => l.id === id) || lessons[0]
+})
+
+const currentLessonIndex = computed(() => currentLesson.value ? currentLesson.value.id - 1 : 0)
+
+watch(() => route.params.id, () => {
+  selectedAnswers.value = {}
+  feedback.value = {}
+})
+
+function selectAnswer(qIndex, optIndex) {
+  if (feedback.value[qIndex]) return
+  selectedAnswers.value[qIndex] = optIndex
+}
+
+function submitAnswer(qIndex) {
+  const q = currentLesson.value.questions[qIndex]
+  if (q.type !== '选择题') {
+    feedback.value[qIndex] = {
+      show: true,
+      correct: null,
+      correctAnswer: q.answer,
+      explanation: q.explanation || '请对照答案检查你的回答。'
+    }
+    return
+  }
+  const selected = selectedAnswers.value[qIndex]
+  if (selected === undefined) return
+  const correct = selected === q.answer
+  feedback.value[qIndex] = {
+    show: true,
+    correct,
+    selected,
+    correctAnswer: q.answer,
+    explanation: q.explanation
+  }
+  if (correct) {
+    lessonProgress.value = Math.min(100, lessonProgress.value + 10)
+  } else {
+    // 保存错题到后端
+    api.post('/api/wrong-answers', {
+      lesson_id: currentLesson.value.id,
+      lesson_title: currentLesson.value.title,
+      question: q.text,
+      user_answer: q.options[selected],
+      correct_answer: q.options[q.answer],
+      question_type: q.type
+    }).catch(() => {})
+  }
+}
+
+function startChat(agentType) {
+  router.push(`/chat/${agentType}?lesson=${currentLesson.value.id}`)
+}
+</script>
+
+<template>
+  <div class="app-container">
+    <div class="header" style="padding-bottom: 20px;">
+      <div style="display: flex; align-items: center; margin-bottom: 12px;">
+        <button @click="router.back()" style="background:none;border:none;color:white;font-size:20px;cursor:pointer;margin-right:12px;padding:4px;">←</button>
+        <div>
+          <h1 style="margin:0;">课时学习</h1>
+          <p style="margin:0;">{{ currentLesson.desc }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="card">
+        <div class="lesson-icon" :style="{ background: currentLesson.bg, color: 'white', marginBottom: '12px' }">
+          {{ currentLesson.icon }}
+        </div>
+        <h2 class="lesson-title" style="font-size: 18px;">{{ currentLesson.title }}</h2>
+        <p class="lesson-desc" style="margin-bottom: 16px;">{{ currentLesson.desc }}</p>
+        <div class="progress-bar">
+          <div class="progress-fill" :style="{ width: lessonProgress + '%' }"></div>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-top: 8px;">
+          <span style="font-size: 13px; color: #666;">学习进度</span>
+          <span style="font-size: 13px; font-weight: 600; color: var(--primary-color);">{{ lessonProgress }}%</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">知识点</div>
+        <div v-for="(point, index) in currentLesson.knowledgePoints" :key="index" class="knowledge-point">
+          <div class="knowledge-title">{{ point.title }}</div>
+          <div class="knowledge-content">{{ point.content }}</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">练习题</div>
+        <div v-for="(q, qIndex) in currentLesson.questions" :key="qIndex" class="question-item">
+          <div class="question-header">
+            <span :class="['question-type', q.typeClass]">{{ q.type }}</span>
+            <span style="font-size: 12px; color: #999;">第{{ qIndex + 1 }}题</span>
+          </div>
+          <div class="question-text">{{ q.text }}</div>
+
+          <template v-if="q.type === '选择题'">
+            <div v-for="(opt, optIndex) in q.options" :key="optIndex"
+                 :class="['option-item',
+                   selectedAnswers[qIndex] === optIndex ? 'selected' : '',
+                   feedback[qIndex]?.show && optIndex === q.answer ? 'correct' : '',
+                   feedback[qIndex]?.show && optIndex === selectedAnswers[qIndex] && optIndex !== q.answer ? 'wrong' : ''
+                 ]"
+                 @click="selectAnswer(qIndex, optIndex)">
+              <span class="option-letter">{{ String.fromCharCode(65 + optIndex) }}</span>
+              <span class="option-text">{{ opt }}</span>
+            </div>
+            <button class="btn-primary" style="width:100%;margin-top:8px;" @click="submitAnswer(qIndex)"
+                    :disabled="selectedAnswers[qIndex] === undefined && !feedback[qIndex]?.show">
+              {{ feedback[qIndex]?.show ? '已提交' : '提交答案' }}
+            </button>
+            <div v-if="feedback[qIndex]?.show" :class="['answer-feedback', feedback[qIndex].correct ? 'correct' : 'wrong']">
+              <strong>{{ feedback[qIndex].correct ? '✓ 回答正确！' : '✗ 回答错误' }}</strong><br>
+              {{ feedback[qIndex].explanation }}
+            </div>
+          </template>
+
+          <template v-else>
+            <textarea class="modal-textarea" :placeholder="q.type === '填空题' ? '请输入答案' : q.type === '编程题' ? '请输入Python代码' : '请输入分析过程'" style="height:80px;margin-bottom:8px;"></textarea>
+            <button class="btn-primary" style="width:100%;" @click="submitAnswer(qIndex)">查看参考答案</button>
+            <div v-if="feedback[qIndex]?.show" :class="['answer-feedback', 'info']" style="background:#E8F4FD;color:var(--primary-color);margin-top:8px;">
+              <strong>参考答案：</strong><br>
+              {{ feedback[qIndex].correctAnswer }}<br>
+              <span style="font-size:12px;margin-top:4px;display:block;">{{ feedback[qIndex].explanation }}</span>
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">智能助手</div>
+        <p style="font-size: 13px; color: #666; margin-bottom: 12px;">遇到问题？找智能助手帮忙</p>
+        <div style="display: flex; gap: 12px;">
+          <div class="agent-card" style="flex: 1; padding: 12px;margin-bottom:0;" @click="startChat('guider')">
+            <div class="agent-avatar agent-guider" style="width:40px;height:40px;font-size:18px;">引</div>
+            <div class="agent-info">
+              <div class="agent-name" style="font-size: 14px;">引航</div>
+              <div class="agent-desc" style="font-size: 11px;">学习引导者</div>
+            </div>
+          </div>
+          <div class="agent-card" style="flex: 1; padding: 12px;margin-bottom:0;" @click="startChat('tutor')">
+            <div class="agent-avatar agent-tutor" style="width:40px;height:40px;font-size:18px;">辅</div>
+            <div class="agent-info">
+              <div class="agent-name" style="font-size: 14px;">辅智</div>
+              <div class="agent-desc" style="font-size: 11px;">答疑辅导者</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <NavBar />
+  </div>
+</template>
