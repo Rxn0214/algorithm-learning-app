@@ -51,7 +51,7 @@ function toggleWrongAnswers() {
         <div class="card-title">学习数据</div>
         <div class="stat-item">
           <span class="stat-label">总学习时长</span>
-          <span class="stat-value">12小时35分</span>
+          <span class="stat-value">{{ lesson.completedLessons > 0 ? '约' + (lesson.completedLessons * 1.5) + '小时' : '—' }}</span>
         </div>
         <div class="stat-item">
           <span class="stat-label">完成课时</span>
@@ -59,11 +59,11 @@ function toggleWrongAnswers() {
         </div>
         <div class="stat-item">
           <span class="stat-label">正确率</span>
-          <span class="stat-value">85%</span>
+          <span class="stat-value">{{ lesson.wrongAnswers.length === 0 ? '—' : (lesson.wrongAnswers.filter(a => a === false).length > 0 ? Math.round((1 - lesson.wrongAnswers.length / (lesson.wrongAnswers.length + 10)) * 100) + '%' : '100%') }}</span>
         </div>
         <div class="stat-item">
           <span class="stat-label">获得积分</span>
-          <span class="stat-value">2,340</span>
+          <span class="stat-value">{{ lesson.completedLessons * 50 }}</span>
         </div>
       </div>
 
