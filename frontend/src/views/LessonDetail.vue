@@ -109,6 +109,20 @@ function startChat(agentType) {
         </div>
       </div>
 
+      <!-- 引航：学习引导（知识点后面、习题前面） -->
+      <div class="card">
+        <div class="card-title">📖 学习引导</div>
+        <p style="font-size: 13px; color: #666; margin-bottom: 12px;">开始做练习前，先让引航帮你梳理一下学习思路？</p>
+        <div class="agent-card" style="padding: 12px;margin-bottom:0;" @click="startChat('guider')">
+          <div class="agent-avatar agent-guider" style="width:40px;height:40px;font-size:18px;margin-right:12px;">引</div>
+          <div class="agent-info">
+            <div class="agent-name" style="font-size: 14px;">引航</div>
+            <div class="agent-desc" style="font-size: 11px;">学习引导者 · 帮你理解知识点、规划学习</div>
+          </div>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+        </div>
+      </div>
+
       <div class="card">
         <div class="card-title">练习题</div>
         <div v-for="(q, qIndex) in currentLesson.questions" :key="qIndex" class="question-item">
@@ -151,24 +165,17 @@ function startChat(agentType) {
         </div>
       </div>
 
+      <!-- 辅智：答疑辅导（练习题后面） -->
       <div class="card">
-        <div class="card-title">智能助手</div>
-        <p style="font-size: 13px; color: #666; margin-bottom: 12px;">遇到问题？找智能助手帮忙</p>
-        <div style="display: flex; gap: 12px;">
-          <div class="agent-card" style="flex: 1; padding: 12px;margin-bottom:0;" @click="startChat('guider')">
-            <div class="agent-avatar agent-guider" style="width:40px;height:40px;font-size:18px;">引</div>
-            <div class="agent-info">
-              <div class="agent-name" style="font-size: 14px;">引航</div>
-              <div class="agent-desc" style="font-size: 11px;">学习引导者</div>
-            </div>
+        <div class="card-title">💡 遇到困难？</div>
+        <p style="font-size: 13px; color: #666; margin-bottom: 12px;">习题不会做？让辅智帮你分析答疑</p>
+        <div class="agent-card" style="padding: 12px;margin-bottom:0;" @click="startChat('tutor')">
+          <div class="agent-avatar agent-tutor" style="width:40px;height:40px;font-size:18px;margin-right:12px;">辅</div>
+          <div class="agent-info">
+            <div class="agent-name" style="font-size: 14px;">辅智</div>
+            <div class="agent-desc" style="font-size: 11px;">答疑辅导者 · 解答疑问、讲解题目</div>
           </div>
-          <div class="agent-card" style="flex: 1; padding: 12px;margin-bottom:0;" @click="startChat('tutor')">
-            <div class="agent-avatar agent-tutor" style="width:40px;height:40px;font-size:18px;">辅</div>
-            <div class="agent-info">
-              <div class="agent-name" style="font-size: 14px;">辅智</div>
-              <div class="agent-desc" style="font-size: 11px;">答疑辅导者</div>
-            </div>
-          </div>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
         </div>
       </div>
     </div>
