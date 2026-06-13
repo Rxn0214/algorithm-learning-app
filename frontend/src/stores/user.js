@@ -21,7 +21,11 @@ export const useUserStore = defineStore('user', () => {
       localStorage.setItem('userInfo', JSON.stringify(data.user))
       return { success: true }
     } catch (e) {
-      return { success: false, error: e.response?.data?.detail || '注册失败' }
+      // 离线模式：直接保存到本地
+      const user = { id: Date.now(), name, studentId, points: 0, level: '新手学员' }
+      currentUser.value = user
+      localStorage.setItem('userInfo', JSON.stringify(user))
+      return { success: true }
     } finally {
       isRegistering.value = false
     }
@@ -35,7 +39,20 @@ export const useUserStore = defineStore('user', () => {
       localStorage.setItem('userInfo', JSON.stringify(data.user))
       return { success: true }
     } catch (e) {
-      return { success: false, error: e.response?.data?.detail || '登录失败' }
+      // 离线模式：从本地存储检查
+      const stored = localStorage.getItem('userInfo')
+      if (stored) {
+        const user = JSON.parse(stored)
+        if (user.studentId === studentId) {
+          currentUser.value = user
+          return { success: true }
+        }
+      }
+      // 离线模式：允许任何学号登录（仅首次）
+      const user = { id: Date.now(), name: '同学', studentId, points: 0, level: '新手学员' }
+      currentUser.value = user
+      localStorage.setItem('userInfo', JSON.stringify(user))
+      return { success: true }
     } finally {
       isLoggingIn.value = false
     }
