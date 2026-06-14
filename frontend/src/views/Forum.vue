@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useUserStore } from '../stores/user'
 import { useForumStore } from '../stores/forum'
 import AppHeader from '../components/AppHeader.vue'
@@ -13,7 +13,15 @@ const newPostContent = ref('')
 const replyTo = ref(null)
 const replyContent = ref('')
 
-// 直接使用forum.posts，不需要再次fetchPosts
+// 页面加载后异步初始化（不阻塞渲染）
+onMounted(() => {
+  // 使用setTimeout确保页面先渲染完成
+  setTimeout(() => {
+    forum.initFromStorage()
+  }, 100)
+})
+
+// 直接使用forum.posts
 const posts = computed(() => forum.posts)
 
 function publishPost() {
@@ -68,7 +76,6 @@ function closeModal() {
         </div>
       </div>
 
-      <!-- 使用computed的posts，避免重复fetch -->
       <div v-for="(post, index) in posts" :key="post.id" class="post-item">
         <div class="post-header">
           <div class="post-avatar">{{ post.avatar }}</div>
@@ -94,10 +101,8 @@ function closeModal() {
         </div>
 
         <div v-if="replyTo === index" style="margin-top: 12px;">
-          <div class="chat-input" style="padding: 0; border: none;">
-            <input v-model="replyContent" placeholder="写下你的回复..." style="flex:1;padding:10px 16px;border:1px solid #E0E0E0;border-radius:20px;font-size:14px;outline:none;">
-            <button @click="submitReply(index)" style="width:36px;height:36px;border-radius:50%;background:var(--primary-color);border:none;color:white;margin-left:8px;cursor:pointer;">→</button>
-          </div>
+          <input v-model="replyContent" placeholder="写下你的回复..." style="width:calc(100% - 50px);padding:10px 16px;border:1px solid #E0E0E0;border-radius:20px;font-size:14px;outline:none;">
+          <button @click="submitReply(index)" style="width:36px;height:36px;border-radius:50%;background:var(--primary-color);border:none;color:white;margin-left:8px;cursor:pointer;">→</button>
         </div>
       </div>
 
