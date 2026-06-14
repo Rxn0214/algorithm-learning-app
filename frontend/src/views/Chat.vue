@@ -1,9 +1,8 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { agents } from '../data/lessons'
 import { useLessonStore } from '../stores/lesson'
-import { api } from '../services/api'
 import { generateLocalReply } from '../data/knowledge_base'
 
 const route = useRoute()
@@ -15,6 +14,7 @@ const chatInput = ref('')
 const chatMessages = ref([])
 const isTyping = ref(false)
 const currentLessonId = ref(Number(route.query.lesson) || null)
+const messageList = ref(null)
 
 onMounted(() => {
   const type = route.params.agentType
@@ -25,57 +25,53 @@ onMounted(() => {
   }
 })
 
-// 快速检测后端是否可用（超时2秒）
-let _backendAlive = null
-async function checkBackend() {
-  if (_backendAlive !== null) return _backendAlive
-  try {
-    const ctrl = new AbortController()
-    setTimeout(() => ctrl.abort(), 800)
-    const res = await fetch('/api/health', { signal: ctrl.signal })
-    _backendAlive = res.ok
-    return _backendAlive
-  } catch {
-    _backendAlive = false
-    return false
-  }
-}
-
 async function sendMessage() {
-  if (!chatInput.value.trim()) return
+  if (!chatInput.value.trim() || isTyping.value) return
 
-  const msg = chatInput.value
+  const msg = chatInput.value.trim()
   chatMessages.value.push({ type: 'user', content: msg })
   chatInput.value = ''
   isTyping.value = true
 
-  // 先检查后端是否可用
-  const backendUp = await checkBackend()
+  // 滚动到底部
+  await nextTick()
+  scrollToBottom()
 
-  if (backendUp) {
-    try {
-      const { data } = await api.post('/api/chat', {
-        message: msg,
-        agent_type: agentType.value,
-        lesson_id: currentLessonId.value,
-        history: chatMessages.value.slice(-10).map(m => ({
-          role: m.type === 'user' ? 'user' : 'assistant',
-          content: m.content
-        }))
-      })
-      chatMessages.value.push({ type: 'agent', content: data.reply })
-      isTyping.value = false
-      return
-    } catch (e) {
-      // API 失败，降级到本地
+  // 直接使用本地知识库生成回复（APK离线模式）
+  try {
+    // 模拟思考延迟，让用户看到typing状态
+    await new Promise(r => setTimeout(r, 500 + Math.random() * 500))
+
+    const reply = generateLocalReply(msg, agentType.value, currentLessonId.value)
+
+    if (reply && reply.trim()) {
+      chatMessages.value.push({ type: 'agent', content: reply })
+    } else {
+      // 备用回复
+      const fallbackReply = agentType.value === 'guider'
+        ? `好问题！关于「${msg}」，建议你先看看对应课时的知识点。需要我帮你找找相关内容吗？`
+        : `让我来分析「${msg}」这个问题。你能告诉我具体是哪个课时遇到困难了吗？`
+      chatMessages.value.push({ type: 'agent', content: fallbackReply })
     }
+  } catch (e) {
+    console.error('Chat error:', e)
+    chatMessages.value.push({
+      type: 'agent',
+      content: '抱歉，处理问题时遇到了一些困难。请稍后再试试～'
+    })
   }
 
-  // 离线/降级模式：直接使用本地知识库
-  await new Promise(r => setTimeout(r, 300)) // 模拟思考过程
-  const reply = generateLocalReply(msg, agentType.value, currentLessonId.value)
-  chatMessages.value.push({ type: 'agent', content: reply })
   isTyping.value = false
+
+  // 滚动到底部
+  await nextTick()
+  scrollToBottom()
+}
+
+function scrollToBottom() {
+  if (messageList.value) {
+    messageList.value.scrollTop = messageList.value.scrollHeight
+  }
 }
 
 function handleKeydown(e) {
@@ -116,8 +112,8 @@ function handleKeydown(e) {
         </div>
       </div>
       <div class="chat-input">
-        <input v-model="chatInput" @keydown="handleKeydown" placeholder="输入消息...">
-        <button @click="sendMessage" :disabled="!chatInput.trim()">
+        <input v-model="chatInput" @keydown="handleKeydown" placeholder="输入消息..." :disabled="isTyping">
+        <button @click="sendMessage" :disabled="!chatInput.trim() || isTyping">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
             <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
           </svg>
@@ -126,3 +122,16 @@ function handleKeydown(e) {
     </div>
   </div>
 </template>
+
+<style scoped>
+.chat-messages {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.message-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-width: 100%;
+}
+</style>

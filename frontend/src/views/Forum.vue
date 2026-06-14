@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed } from 'vue'
 import { useUserStore } from '../stores/user'
 import { useForumStore } from '../stores/forum'
 import AppHeader from '../components/AppHeader.vue'
@@ -13,20 +13,20 @@ const newPostContent = ref('')
 const replyTo = ref(null)
 const replyContent = ref('')
 
-onMounted(() => {
-  forum.fetchPosts()
-})
+// 直接使用forum.posts，不需要再次fetchPosts
+const posts = computed(() => forum.posts)
 
 function publishPost() {
   if (!newPostContent.value.trim()) return
-  forum.publishPost(newPostContent.value.trim(), user.currentUser.name)
+  forum.publishPost(newPostContent.value.trim(), user.currentUser?.name || '匿名用户')
   newPostContent.value = ''
   showPostModal.value = false
 }
 
 function toggleLike(index) {
-  const post = forum.posts[index]
-  forum.toggleLike(post.id, index)
+  if (index >= 0 && index < forum.posts.length) {
+    forum.toggleLike(forum.posts[index].id, index)
+  }
 }
 
 function showReplyInput(index) {
@@ -36,10 +36,16 @@ function showReplyInput(index) {
 
 function submitReply(index) {
   if (!replyContent.value.trim()) return
-  forum.addReply(forum.posts[index].id, replyContent.value.trim(), user.currentUser.name)
-  forum.posts[index].replies++
-  replyContent.value = ''
-  replyTo.value = null
+  if (index >= 0 && index < forum.posts.length) {
+    forum.addReply(forum.posts[index].id, replyContent.value.trim(), user.currentUser?.name || '匿名用户')
+    replyContent.value = ''
+    replyTo.value = null
+  }
+}
+
+function closeModal() {
+  showPostModal.value = false
+  newPostContent.value = ''
 }
 </script>
 
@@ -62,13 +68,8 @@ function submitReply(index) {
         </div>
       </div>
 
-      <div v-if="forum.loading" style="padding: 20px;">
-        <div class="skeleton skeleton-card"></div>
-        <div class="skeleton skeleton-card"></div>
-        <div class="skeleton skeleton-card"></div>
-      </div>
-
-      <div v-for="(post, index) in forum.posts" :key="post.id" class="post-item">
+      <!-- 使用computed的posts，避免重复fetch -->
+      <div v-for="(post, index) in posts" :key="post.id" class="post-item">
         <div class="post-header">
           <div class="post-avatar">{{ post.avatar }}</div>
           <div>
@@ -100,7 +101,7 @@ function submitReply(index) {
         </div>
       </div>
 
-      <div v-if="forum.posts.length === 0 && !forum.loading" class="empty-state">
+      <div v-if="posts.length === 0" class="empty-state">
         <span class="empty-icon">💬</span>
         <span class="empty-text">还没有留言，快来发表第一条吧！</span>
       </div>
@@ -108,12 +109,12 @@ function submitReply(index) {
 
     <button class="fab-button" @click="showPostModal = true">+</button>
 
-    <div v-if="showPostModal" class="modal-overlay" @click.self="showPostModal = false">
+    <div v-if="showPostModal" class="modal-overlay" @click.self="closeModal">
       <div class="modal-content">
         <div class="modal-title">发布新留言</div>
         <textarea class="modal-textarea" v-model="newPostContent" placeholder="分享你的学习心得、问题或想法..."></textarea>
         <div class="modal-actions">
-          <button class="btn-secondary" @click="showPostModal = false">取消</button>
+          <button class="btn-secondary" @click="closeModal">取消</button>
           <button class="btn-primary" @click="publishPost" :disabled="!newPostContent.trim()">发布</button>
         </div>
       </div>
