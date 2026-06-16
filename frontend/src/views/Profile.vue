@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../stores/user'
 import { useLessonStore } from '../stores/lesson'
@@ -15,19 +15,18 @@ const showWrongAnswers = ref(false)
 const showReport = ref(false)
 const learningReport = ref(null)
 
-// 获取总答题数（已完成课时 × 每课时题目数）
-const totalQuestions = computed(() => {
-  return lesson.completedLessons * 2 // 每课时约2题
+// 页面加载时同步最新数据
+onMounted(() => {
+  lesson.fetchStats()
+  lesson.fetchWrongAnswers()
 })
 
-// 正确率：从错题数倒推（近似）
+// 正确率：使用真实答题统计
 const correctRate = computed(() => {
-  const wrongCount = lesson.wrongAnswers.length
-  const total = totalQuestions.value
+  const total = lesson.totalAttempts
   if (total === 0) return '—'
-  if (wrongCount === 0) return '100%'
-  const rate = Math.round(((total - wrongCount) / total) * 100)
-  return Math.max(0, rate) + '%'
+  const correct = lesson.correctAttempts
+  return Math.round((correct / total) * 100) + '%'
 })
 
 // 学习时长估算
@@ -49,6 +48,7 @@ function toggleWrongAnswers() {
 }
 
 function generateReport() {
+  lesson.fetchStats()
   lesson.fetchWrongAnswers()
   const now = new Date()
   const dateStr = now.getFullYear() + '年' + (now.getMonth() + 1) + '月' + now.getDate() + '日'
@@ -56,6 +56,8 @@ function generateReport() {
     date: dateStr,
     completed: lesson.completedLessons,
     total: lesson.totalLessons,
+    totalAnswered: lesson.totalAttempts,
+    correctCount: lesson.correctAttempts,
     wrongCount: lesson.wrongAnswers.length,
     rate: correctRate.value,
     hours: studyHours.value,
@@ -89,20 +91,24 @@ function generateReport() {
       <div class="card">
         <div class="card-title">学习数据</div>
         <div class="stat-item">
-          <span class="stat-label">总学习时长</span>
-          <span class="stat-value">{{ studyHours }}</span>
+          <span class="stat-label">总答题数</span>
+          <span class="stat-value">{{ lesson.totalAttempts }}题</span>
         </div>
         <div class="stat-item">
-          <span class="stat-label">完成课时</span>
-          <span class="stat-value">{{ lesson.completedLessons }}/{{ lesson.totalLessons }}</span>
+          <span class="stat-label">答对次数</span>
+          <span class="stat-value">{{ lesson.correctAttempts }}次</span>
         </div>
         <div class="stat-item">
           <span class="stat-label">正确率</span>
           <span class="stat-value">{{ correctRate }}</span>
         </div>
         <div class="stat-item">
-          <span class="stat-label">获得积分</span>
-          <span class="stat-value">{{ lesson.completedLessons * 10 + (lesson.wrongAnswers.length === 0 && lesson.completedLessons > 0 ? 20 : 0) }}</span>
+          <span class="stat-label">完成课时</span>
+          <span class="stat-value">{{ lesson.completedLessons }}/{{ lesson.totalLessons }}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">学习时长</span>
+          <span class="stat-value">{{ studyHours }}</span>
         </div>
       </div>
 
@@ -154,20 +160,24 @@ function generateReport() {
             <span class="stat-value">{{ learningReport.completed }}/{{ learningReport.total }}</span>
           </div>
           <div class="stat-item" style="padding: 8px 0;">
-            <span class="stat-label">答题正确率</span>
-            <span class="stat-value">{{ learningReport.rate }}</span>
+            <span class="stat-label">累计答题</span>
+            <span class="stat-value">{{ learningReport.totalAnswered }}题</span>
           </div>
           <div class="stat-item" style="padding: 8px 0;">
-            <span class="stat-label">学习时长</span>
-            <span class="stat-value">{{ learningReport.hours }}</span>
+            <span class="stat-label">答对次数</span>
+            <span class="stat-value">{{ learningReport.correctCount }}次</span>
+          </div>
+          <div class="stat-item" style="padding: 8px 0;">
+            <span class="stat-label">正确率</span>
+            <span class="stat-value">{{ learningReport.rate }}</span>
           </div>
           <div class="stat-item" style="padding: 8px 0;">
             <span class="stat-label">错题数量</span>
             <span class="stat-value">{{ learningReport.wrongCount }}道</span>
           </div>
           <div class="stat-item" style="padding: 8px 0;">
-            <span class="stat-label">当前等级</span>
-            <span class="stat-value">{{ learningReport.level }}</span>
+            <span class="stat-label">学习时长</span>
+            <span class="stat-value">{{ learningReport.hours }}</span>
           </div>
           <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #D0E8F7; font-size: 12px; color: #666; line-height: 1.6;">
             💡 <strong>学习建议：</strong>

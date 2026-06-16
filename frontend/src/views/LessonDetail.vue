@@ -43,18 +43,33 @@ function submitAnswer(qIndex) {
   if (q.type !== '选择题') {
     // 非选择题：获取文本输入
     const userAnswer = (textAnswers.value[qIndex] || '').trim()
-    feedback.value[qIndex] = {
-      show: true,
-      correct: null,
-      correctAnswer: q.answer,
-      explanation: q.explanation || '请对照答案检查你的回答。'
+
+    if (!userAnswer) return // 没输入不提交
+
+    // 提交答案并获取判断结果
+    const result = lessonStore.submitAnswer(qIndex, userAnswer, lessonId)
+
+    if (q.type === '填空题') {
+      // 填空题：自动判断对错
+      feedback.value[qIndex] = {
+        show: true,
+        correct: result?.correct === true,
+        correctAnswer: q.answer,
+        explanation: q.explanation || (result?.correct ? '回答正确！' : '答案有误，请对照正确答案。')
+      }
+      if (result?.correct) {
+        lessonProgress.value = Math.min(100, lessonProgress.value + 15)
+      }
+    } else {
+      // 编程题/分析题：不自动判对错，显示参考答案
+      feedback.value[qIndex] = {
+        show: true,
+        correct: null,
+        correctAnswer: q.answer,
+        explanation: q.explanation || '请对照参考答案检查你的回答。'
+      }
+      lessonProgress.value = Math.min(100, lessonProgress.value + 15)
     }
-    // 记录错题（非选择题默认记录，供复习用）
-    if (userAnswer) {
-      lessonStore.submitAnswer(qIndex, userAnswer, lessonId)
-    }
-    // 更新进度
-    lessonProgress.value = Math.min(100, lessonProgress.value + 15)
     lessonStore.updateLessonProgress(lessonId, lessonProgress.value)
     return
   }
@@ -168,9 +183,27 @@ function startChat(agentType) {
           </template>
 
           <template v-else>
-            <textarea v-model="textAnswers[qIndex]" class="modal-textarea" :placeholder="q.type === '填空题' ? '请输入答案' : q.type === '编程题' ? '请输入Python代码' : '请输入分析过程'" style="height:80px;margin-bottom:8px;"></textarea>
-            <button class="btn-primary" style="width:100%;" @click="submitAnswer(qIndex)">查看参考答案</button>
-            <div v-if="feedback[qIndex]?.show" :class="['answer-feedback', 'info']" style="background:#E8F4FD;color:var(--primary-color);margin-top:8px;">
+            <textarea v-model="textAnswers[qIndex]" class="modal-textarea"
+              :placeholder="q.type === '填空题' ? '请输入答案' : q.type === '编程题' ? '请输入Python代码' : '请输入分析过程'"
+              style="height:80px;margin-bottom:8px;"
+              :disabled="feedback[qIndex]?.show"></textarea>
+            <button class="btn-primary" style="width:100%;" @click="submitAnswer(qIndex)"
+                    :disabled="!textAnswers[qIndex]?.trim() || feedback[qIndex]?.show">
+              {{ feedback[qIndex]?.show ? '已提交' : '提交答案' }}
+            </button>
+
+            <!-- 填空题：显示对错 -->
+            <div v-if="feedback[qIndex]?.show && q.type === '填空题'"
+                 :class="['answer-feedback', feedback[qIndex].correct ? 'correct' : 'wrong']">
+              <strong>{{ feedback[qIndex].correct ? '✓ 回答正确！' : '✗ 回答有误' }}</strong><br>
+              <span v-if="!feedback[qIndex].correct">正确答案：{{ feedback[qIndex].correctAnswer }}<br></span>
+              {{ feedback[qIndex].explanation }}
+            </div>
+
+            <!-- 编程题/分析题：显示参考答案 -->
+            <div v-if="feedback[qIndex]?.show && q.type !== '填空题'"
+                 :class="['answer-feedback', 'info']"
+                 style="background:#E8F4FD;color:var(--primary-color);margin-top:8px;">
               <strong>参考答案：</strong><br>
               {{ feedback[qIndex].correctAnswer }}<br>
               <span style="font-size:12px;margin-top:4px;display:block;">{{ feedback[qIndex].explanation }}</span>

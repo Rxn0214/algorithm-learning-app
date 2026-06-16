@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { lessons as lessonData } from '../data/lessons'
 
 const PROGRESS_KEY = 'lesson_progress'
+const STATS_KEY = 'answer_stats'
 
 function loadProgress() {
   try {
@@ -12,6 +13,44 @@ function loadProgress() {
 
 function saveProgress(data) {
   localStorage.setItem(PROGRESS_KEY, JSON.stringify(data))
+}
+
+function loadStats() {
+  try {
+    return JSON.parse(localStorage.getItem(STATS_KEY) || '{"total":0,"correct":0}')
+  } catch { return { total: 0, correct: 0 } }
+}
+
+function saveStats(data) {
+  localStorage.setItem(STATS_KEY, JSON.stringify(data))
+}
+
+/**
+ * 灵活匹配填空题答案
+ * 支持：忽略大小写、忽略多余空格、按关键词匹配
+ */
+export function checkFillAnswer(userAnswer, correctAnswer) {
+  if (!userAnswer || !correctAnswer) return false
+
+  const normalize = (s) => s.replace(/\s+/g, ' ').trim().toLowerCase()
+  const ua = normalize(userAnswer)
+  const ca = normalize(correctAnswer)
+
+  // 精确匹配
+  if (ua === ca) return true
+
+  // 关键词匹配：正确答案中的每个关键词都出现在用户答案中
+  const keywords = ca.split(/[\s,，、]+/).filter(k => k.length > 0)
+  if (keywords.length >= 2) {
+    const allFound = keywords.every(kw => ua.includes(kw))
+    if (allFound) return true
+  }
+
+  // 去掉标点后再试一次精确匹配
+  const stripPunct = (s) => s.replace(/[，,、。！？；：""''【】《》（）()\s]+/g, '')
+  if (stripPunct(ua) === stripPunct(ca)) return true
+
+  return false
 }
 
 export const useLessonStore = defineStore('lesson', () => {
@@ -38,6 +77,11 @@ export const useLessonStore = defineStore('lesson', () => {
   const wrongAnswers = ref([])
   const studyDays = ref(0)
   const achievements = ref(0)
+
+  // 答题统计（持久化）
+  const stats = ref(loadStats())
+  const totalAttempts = computed(() => stats.value.total || 0)
+  const correctAttempts = computed(() => stats.value.correct || 0)
 
   const currentLesson = computed(() =>
     lessons.value.find(l => l.id === currentLessonId.value) || null
@@ -81,16 +125,33 @@ export const useLessonStore = defineStore('lesson', () => {
   }
 
   function submitAnswer(questionIndex, answer, lessonId = null) {
-    // 支持通过 lessonId 直接查找课时（LessonDetail 用），也兼容 currentLesson
     const id = lessonId || currentLessonId.value
     if (!id) return null
     const lesson = lessonData.find(l => l.id === id)
     if (!lesson || !lesson.questions[questionIndex]) return null
 
     const question = lesson.questions[questionIndex]
-    const correct = question.answer !== undefined
-      ? answer === question.answer
-      : null
+    let correct = null
+
+    if (question.answer !== undefined) {
+      if (question.type === '选择题') {
+        // 选择题：精确比较索引
+        correct = answer === question.answer
+      } else if (question.type === '填空题') {
+        // 填空题：灵活匹配
+        correct = checkFillAnswer(answer, question.answer)
+      } else {
+        // 编程题/分析题：不自动判对错，返回 null
+        correct = null
+      }
+    }
+
+    // 记录答题统计
+    stats.value.total = (stats.value.total || 0) + 1
+    if (correct === true) {
+      stats.value.correct = (stats.value.correct || 0) + 1
+    }
+    saveStats(stats.value)
 
     if (correct === false) {
       wrongAnswers.value.push({
@@ -103,7 +164,6 @@ export const useLessonStore = defineStore('lesson', () => {
         type: question.type,
         createdAt: new Date().toISOString()
       })
-      // 保存错题到 localStorage
       try {
         const saved = JSON.parse(localStorage.getItem('wrong_answers') || '[]')
         saved.push(wrongAnswers.value[wrongAnswers.value.length - 1])
@@ -129,12 +189,17 @@ export const useLessonStore = defineStore('lesson', () => {
     } catch { wrongAnswers.value = [] }
   }
 
+  function fetchStats() {
+    stats.value = loadStats()
+  }
+
   return {
     lessons, currentLessonId, currentLesson, wrongAnswers,
     completedLessons, totalLessons, progressPercent,
     studyDays, achievements,
+    totalAttempts, correctAttempts, stats,
     setCurrentLesson: startLesson, startLesson,
     markCompleted, submitAnswer, updateLessonProgress,
-    fetchProgress, updateProgress, fetchWrongAnswers
+    fetchProgress, updateProgress, fetchWrongAnswers, fetchStats
   }
 })
