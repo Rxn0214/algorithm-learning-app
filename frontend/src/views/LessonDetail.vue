@@ -20,16 +20,59 @@ const currentLesson = computed(() => {
   return lessons.find(l => l.id === id) || lessons[0]
 })
 
-// 进入课时同步进度
+// 获取当前用户 + 课时的答案存储 key
+function getAnswerKey(lessonId) {
+  const user = JSON.parse(localStorage.getItem('current_user') || 'null')
+  const uid = user?.studentId || 'anonymous'
+  return 'lesson_answers_' + uid + '_' + lessonId
+}
+
+// 保存答题状态到 localStorage
+function saveAnswerState(lessonId) {
+  try {
+    const key = getAnswerKey(lessonId)
+    const state = {
+      selectedAnswers: selectedAnswers.value,
+      textAnswers: textAnswers.value,
+      feedback: feedback.value,
+      progress: lessonProgress.value
+    }
+    localStorage.setItem(key, JSON.stringify(state))
+  } catch { /* ignore */ }
+}
+
+// 从 localStorage 恢复答题状态
+function loadAnswerState(lessonId) {
+  try {
+    const key = getAnswerKey(lessonId)
+    const saved = JSON.parse(localStorage.getItem(key) || 'null')
+    if (saved) {
+      selectedAnswers.value = saved.selectedAnswers || {}
+      textAnswers.value = saved.textAnswers || {}
+      feedback.value = saved.feedback || {}
+      lessonProgress.value = saved.progress || 0
+      return true
+    }
+  } catch { /* ignore */ }
+  return false
+}
+
+// 进入课时：恢复答题状态
 watch(() => route.params.id, (newId) => {
-  selectedAnswers.value = {}
-  textAnswers.value = {}
-  feedback.value = {}
-  // 从 store 恢复进度（store 已从 localStorage 加载）
   const id = Number(newId)
   lessonStore.setCurrentLesson(id)
-  const lp = lessonStore.savedProgress[String(id)]
-  lessonProgress.value = lp ? (lp.progress || 0) : 0
+
+  // 尝试从 localStorage 恢复已保存的答题状态
+  const restored = loadAnswerState(id)
+
+  if (!restored) {
+    // 没保存过答题状态，从头开始
+    selectedAnswers.value = {}
+    textAnswers.value = {}
+    feedback.value = {}
+    const lp = lessonStore.savedProgress[String(id)]
+    lessonProgress.value = lp ? (lp.progress || 0) : 0
+  }
 }, { immediate: true })
 
 function selectAnswer(qIndex, optIndex) {
@@ -72,6 +115,7 @@ function submitAnswer(qIndex) {
       lessonProgress.value = Math.min(100, lessonProgress.value + 15)
     }
     lessonStore.updateLessonProgress(lessonId, lessonProgress.value)
+    saveAnswerState(lessonId)
     return
   }
 
@@ -96,6 +140,7 @@ function submitAnswer(qIndex) {
     lessonStore.submitAnswer(qIndex, selectedText, lessonId)
   }
   lessonStore.updateLessonProgress(lessonId, lessonProgress.value)
+  saveAnswerState(lessonId)
 }
 
 function startChat(agentType) {
