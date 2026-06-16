@@ -11,20 +11,25 @@ const router = useRouter()
 const lessonStore = useLessonStore()
 
 const selectedAnswers = ref({})
+const textAnswers = ref({})       // 非选择题的文本答案
 const feedback = ref({})
-const lessonProgress = ref(65)
+const lessonProgress = ref(0)
 
 const currentLesson = computed(() => {
   const id = Number(route.params.id)
   return lessons.find(l => l.id === id) || lessons[0]
 })
 
-const currentLessonIndex = computed(() => currentLesson.value ? currentLesson.value.id - 1 : 0)
-
-watch(() => route.params.id, () => {
+// 进入课时同步进度
+watch(() => route.params.id, (newId) => {
   selectedAnswers.value = {}
+  textAnswers.value = {}
   feedback.value = {}
-})
+  // 从 localStorage 恢复进度
+  const saved = JSON.parse(localStorage.getItem('lesson_progress') || '{}')
+  const lp = saved[String(newId)]
+  lessonProgress.value = lp ? (lp.progress || 0) : 0
+}, { immediate: true })
 
 function selectAnswer(qIndex, optIndex) {
   if (feedback.value[qIndex]) return
@@ -33,17 +38,31 @@ function selectAnswer(qIndex, optIndex) {
 
 function submitAnswer(qIndex) {
   const q = currentLesson.value.questions[qIndex]
+  const lessonId = currentLesson.value.id
+
   if (q.type !== '选择题') {
+    // 非选择题：获取文本输入
+    const userAnswer = (textAnswers.value[qIndex] || '').trim()
     feedback.value[qIndex] = {
       show: true,
       correct: null,
       correctAnswer: q.answer,
       explanation: q.explanation || '请对照答案检查你的回答。'
     }
+    // 记录错题（非选择题默认记录，供复习用）
+    if (userAnswer) {
+      lessonStore.submitAnswer(qIndex, userAnswer, lessonId)
+    }
+    // 更新进度
+    lessonProgress.value = Math.min(100, lessonProgress.value + 15)
+    lessonStore.updateLessonProgress(lessonId, lessonProgress.value)
     return
   }
+
+  // 选择题
   const selected = selectedAnswers.value[qIndex]
   if (selected === undefined) return
+
   const correct = selected === q.answer
   feedback.value[qIndex] = {
     show: true,
@@ -52,10 +71,15 @@ function submitAnswer(qIndex) {
     correctAnswer: q.answer,
     explanation: q.explanation
   }
+
   if (correct) {
-    lessonProgress.value = Math.min(100, lessonProgress.value + 10)
+    lessonProgress.value = Math.min(100, lessonProgress.value + 15)
+  } else {
+    // 记录错题：传递选中的选项文本而非索引
+    const selectedText = q.options[selected] || String(selected)
+    lessonStore.submitAnswer(qIndex, selectedText, lessonId)
   }
-  // 错题已由 lessonStore.submitAnswer 自动保存到 localStorage
+  lessonStore.updateLessonProgress(lessonId, lessonProgress.value)
 }
 
 function startChat(agentType) {
@@ -144,7 +168,7 @@ function startChat(agentType) {
           </template>
 
           <template v-else>
-            <textarea class="modal-textarea" :placeholder="q.type === '填空题' ? '请输入答案' : q.type === '编程题' ? '请输入Python代码' : '请输入分析过程'" style="height:80px;margin-bottom:8px;"></textarea>
+            <textarea v-model="textAnswers[qIndex]" class="modal-textarea" :placeholder="q.type === '填空题' ? '请输入答案' : q.type === '编程题' ? '请输入Python代码' : '请输入分析过程'" style="height:80px;margin-bottom:8px;"></textarea>
             <button class="btn-primary" style="width:100%;" @click="submitAnswer(qIndex)">查看参考答案</button>
             <div v-if="feedback[qIndex]?.show" :class="['answer-feedback', 'info']" style="background:#E8F4FD;color:var(--primary-color);margin-top:8px;">
               <strong>参考答案：</strong><br>

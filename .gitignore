@@ -13,4 +13,8 @@ backend/app.db
 Thumbs.db
 *.log
 *.zip
+*.apk
 android/
+ios/
+apk-*/
+*.old

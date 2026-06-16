@@ -80,8 +80,11 @@ export const useLessonStore = defineStore('lesson', () => {
     saveProgress(savedProgress.value)
   }
 
-  function submitAnswer(questionIndex, answer) {
-    const lesson = currentLesson.value
+  function submitAnswer(questionIndex, answer, lessonId = null) {
+    // 支持通过 lessonId 直接查找课时（LessonDetail 用），也兼容 currentLesson
+    const id = lessonId || currentLessonId.value
+    if (!id) return null
+    const lesson = lessonData.find(l => l.id === id)
     if (!lesson || !lesson.questions[questionIndex]) return null
 
     const question = lesson.questions[questionIndex]

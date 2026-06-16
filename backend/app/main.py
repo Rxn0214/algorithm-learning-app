@@ -62,13 +62,3 @@ if os.path.exists(FRONTEND_DIST):
 @app.on_event("startup")
 async def startup():
     init_db()
-
-
-@app.on_event("startup")
-async def startup():
-    init_db()
-
-
-@app.get("/api/health")
-async def health():
-    return {"status": "ok", "version": "2.0.0"}

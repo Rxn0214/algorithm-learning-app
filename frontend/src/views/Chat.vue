@@ -3,7 +3,7 @@ import { ref, onMounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { agents } from '../data/lessons'
 import { useLessonStore } from '../stores/lesson'
-import { generateLocalReply } from '../data/knowledge_base'
+import { sendChatMessage } from '../services/chat'
 
 const route = useRoute()
 const router = useRouter()
@@ -11,10 +11,12 @@ const router = useRouter()
 const agentType = ref(route.params.agentType || 'guider')
 const currentAgent = ref(agents.guider)
 const chatInput = ref('')
-const chatMessages = ref([])
+const chatMessages = ref([])        // 显示用：[{type: 'user'|'agent', content}]
+const chatHistory = ref([])         // API 用：[{role: 'user'|'assistant', content}]
 const isTyping = ref(false)
 const currentLessonId = ref(Number(route.query.lesson) || null)
 const messageList = ref(null)
+const apiAvailable = ref(true)      // 追踪 API 是否可用
 
 onMounted(() => {
   const type = route.params.agentType
@@ -26,44 +28,37 @@ onMounted(() => {
 })
 
 async function sendMessage() {
-  if (!chatInput.value.trim() || isTyping.value) return
-
   const msg = chatInput.value.trim()
+  if (!msg || isTyping.value) return
+
+  // 添加用户消息到显示区和历史
   chatMessages.value.push({ type: 'user', content: msg })
+  chatHistory.value.push({ role: 'user', content: msg })
   chatInput.value = ''
   isTyping.value = true
 
-  // 滚动到底部
   await nextTick()
   scrollToBottom()
 
-  // 直接使用本地知识库生成回复（APK离线模式）
-  try {
-    // 模拟思考延迟，让用户看到typing状态
-    await new Promise(r => setTimeout(r, 500 + Math.random() * 500))
+  // 调用 AI API（带完整对话历史）
+  const reply = await sendChatMessage(
+    msg,
+    agentType.value,
+    currentLessonId.value,
+    chatHistory.value.slice(0, -1) // 不包含刚发的这条（history 应为当前消息之前的历史）
+  )
 
-    const reply = generateLocalReply(msg, agentType.value, currentLessonId.value)
-
-    if (reply && reply.trim()) {
-      chatMessages.value.push({ type: 'agent', content: reply })
-    } else {
-      // 备用回复
-      const fallbackReply = agentType.value === 'guider'
-        ? `好问题！关于「${msg}」，建议你先看看对应课时的知识点。需要我帮你找找相关内容吗？`
-        : `让我来分析「${msg}」这个问题。你能告诉我具体是哪个课时遇到困难了吗？`
-      chatMessages.value.push({ type: 'agent', content: fallbackReply })
-    }
-  } catch (e) {
-    console.error('Chat error:', e)
-    chatMessages.value.push({
-      type: 'agent',
-      content: '抱歉，处理问题时遇到了一些困难。请稍后再试试～'
-    })
+  // 检查是否离线回退
+  if (reply.startsWith('📡')) {
+    apiAvailable.value = false
   }
+
+  // 添加 AI 回复
+  chatMessages.value.push({ type: 'agent', content: reply })
+  chatHistory.value.push({ role: 'assistant', content: reply })
 
   isTyping.value = false
 
-  // 滚动到底部
   await nextTick()
   scrollToBottom()
 }
@@ -84,6 +79,7 @@ function handleKeydown(e) {
 
 <template>
   <div class="app-container" style="padding-bottom:0;">
+    <!-- 顶部栏 -->
     <div class="chat-header">
       <button class="back-btn" @click="router.back()">←</button>
       <div :class="['agent-avatar', currentAgent.avatarClass]" style="width:36px;height:36px;font-size:16px;margin-right:12px;">
@@ -91,28 +87,45 @@ function handleKeydown(e) {
       </div>
       <div>
         <div style="font-size:16px;font-weight:600;">{{ currentAgent.name }}</div>
-        <div style="font-size:12px;opacity:0.8;">{{ currentAgent.role }}</div>
+        <div style="font-size:12px;opacity:0.8;">
+          {{ currentAgent.role }}
+          <span v-if="!apiAvailable" style="color:#FFD166;margin-left:6px;">📡 离线模式</span>
+        </div>
       </div>
     </div>
 
+    <!-- 对话区域 -->
     <div class="chat-container">
       <div class="chat-messages" ref="messageList">
+        <!-- 系统欢迎消息 -->
         <div class="message agent">
           <div class="message-text">{{ currentAgent.greeting }}</div>
         </div>
+
+        <!-- 对话消息 -->
         <div v-for="(msg, index) in chatMessages" :key="index" :class="['message', msg.type]">
           <div class="message-text">{{ msg.content }}</div>
         </div>
+
+        <!-- AI 思考中动画 -->
         <div v-if="isTyping" class="message agent">
-          <div class="typing-indicator">
+          <div class="message-text" style="display:flex;align-items:center;gap:6px;">
+            <span>思考中</span>
             <span class="typing-dot"></span>
             <span class="typing-dot"></span>
             <span class="typing-dot"></span>
           </div>
         </div>
       </div>
+
+      <!-- 输入区域 -->
       <div class="chat-input">
-        <input v-model="chatInput" @keydown="handleKeydown" placeholder="输入消息..." :disabled="isTyping">
+        <input
+          v-model="chatInput"
+          @keydown="handleKeydown"
+          :placeholder="isTyping ? 'AI 正在思考...' : '输入消息，Enter 发送...'"
+          :disabled="isTyping"
+        >
         <button @click="sendMessage" :disabled="!chatInput.trim() || isTyping">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
             <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
@@ -133,5 +146,22 @@ function handleKeydown(e) {
   white-space: pre-wrap;
   word-break: break-word;
   max-width: 100%;
+}
+
+/* 思考中动画点 */
+.typing-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #999;
+  animation: typing-bounce 1.4s ease-in-out infinite;
+}
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes typing-bounce {
+  0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+  30% { opacity: 1; transform: translateY(-6px); }
 }
 </style>

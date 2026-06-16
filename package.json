@@ -8,13 +8,18 @@
     "build": "cd frontend && npm run build",
     "cap-init": "npx cap init 算法学习助手 com.algorithm.app --webDir frontend/dist",
     "cap-add-android": "npx cap add android",
+    "cap-add-ios": "npx cap add ios",
     "cap-sync": "npx cap sync",
-    "cap-open": "npx cap open android",
+    "cap-open-android": "npx cap open android",
+    "cap-open-ios": "npx cap open ios",
+    "cap-build-android": "cd frontend && npm run build && cd .. && npx cap sync && npx cap copy android",
+    "cap-build-ios": "cd frontend && npm run build && cd .. && npx cap sync && npx cap copy ios",
     "cap-build": "cd frontend && npm run build && cd .. && npx cap sync && npx cap copy"
   },
   "dependencies": {
     "@capacitor/android": "^8.4.0",
     "@capacitor/cli": "^8.4.0",
-    "@capacitor/core": "^8.4.0"
+    "@capacitor/core": "^8.4.0",
+    "@capacitor/ios": "^8.4.0"
   }
 }

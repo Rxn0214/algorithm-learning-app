@@ -2,15 +2,23 @@
   "appId": "com.algorithm.app",
   "appName": "算法学习助手",
   "webDir": "frontend/dist",
+  "bundledWebRuntime": false,
   "server": {
     "androidScheme": "https",
+    "iosScheme": "capacitor",
     "cleartext": true,
     "allowNavigation": ["*"]
+  },
+  "ios": {
+    "contentInset": "always",
+    "allowsLinkPreview": true,
+    "scrollEnabled": true
   },
   "plugins": {
     "SplashScreen": {
       "launchShowDuration": 2000,
-      "backgroundColor": "#00B4D8"
+      "backgroundColor": "#00B4D8",
+      "androidScaleType": "CENTER_CROP"
     }
   }
 }
