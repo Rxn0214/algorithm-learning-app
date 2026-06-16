@@ -18,14 +18,37 @@ const currentLessonId = ref(Number(route.query.lesson) || null)
 const messageList = ref(null)
 const apiAvailable = ref(true)      // 追踪 API 是否可用
 
-onMounted(() => {
+onMounted(async () => {
   const type = route.params.agentType
   currentAgent.value = agents[type] || agents.guider
   if (!currentLessonId.value) {
     const lessonStore = useLessonStore()
     currentLessonId.value = lessonStore.currentLessonId
   }
+
+  // 引航：主动发起第一次引导提问
+  if (type === 'guider') {
+    await startGuiding()
+  }
 })
+
+// 引航首次主动提问
+async function startGuiding() {
+  isTyping.value = true
+  const reply = await sendChatMessage(
+    '开始引导学习',
+    'guider',
+    currentLessonId.value,
+    []
+  )
+  if (reply) {
+    chatMessages.value.push({ type: 'agent', content: reply })
+    chatHistory.value.push({ role: 'assistant', content: reply })
+  }
+  isTyping.value = false
+  await nextTick()
+  scrollToBottom()
+}
 
 async function sendMessage() {
   const msg = chatInput.value.trim()
@@ -97,8 +120,8 @@ function handleKeydown(e) {
     <!-- 对话区域 -->
     <div class="chat-container">
       <div class="chat-messages" ref="messageList">
-        <!-- 系统欢迎消息 -->
-        <div class="message agent">
+        <!-- 辅智的系统欢迎消息（引航已有主动引导，不显示） -->
+        <div v-if="agentType !== 'guider'" class="message agent">
           <div class="message-text">{{ currentAgent.greeting }}</div>
         </div>
 

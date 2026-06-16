@@ -25,9 +25,10 @@ watch(() => route.params.id, (newId) => {
   selectedAnswers.value = {}
   textAnswers.value = {}
   feedback.value = {}
-  // 从 localStorage 恢复进度
-  const saved = JSON.parse(localStorage.getItem('lesson_progress') || '{}')
-  const lp = saved[String(newId)]
+  // 从 store 恢复进度（store 已从 localStorage 加载）
+  const id = Number(newId)
+  lessonStore.setCurrentLesson(id)
+  const lp = lessonStore.savedProgress[String(id)]
   lessonProgress.value = lp ? (lp.progress || 0) : 0
 }, { immediate: true })
 

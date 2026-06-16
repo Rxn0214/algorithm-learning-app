@@ -116,11 +116,15 @@ export const useLessonStore = defineStore('lesson', () => {
 
   function updateLessonProgress(id, pct) {
     const key = String(id)
-    const current = savedProgress.value[key] || { started: true, completed: false, progress: 0 }
-    current.progress = Math.max(current.progress || 0, pct)
-    current.started = true
-    if (pct >= 100) current.completed = true
-    savedProgress.value[key] = current
+    const prev = savedProgress.value[key] || { started: true, completed: false, progress: 0 }
+    // 创建新对象引用触发 Vue ref 响应
+    const current = {
+      started: true,
+      completed: pct >= 100 || prev.completed,
+      progress: Math.max(prev.progress || 0, pct)
+    }
+    // 替换整个 value 对象确保响应式更新
+    savedProgress.value = { ...savedProgress.value, [key]: current }
     saveProgress(savedProgress.value)
   }
 
@@ -195,7 +199,7 @@ export const useLessonStore = defineStore('lesson', () => {
 
   return {
     lessons, currentLessonId, currentLesson, wrongAnswers,
-    completedLessons, totalLessons, progressPercent,
+    savedProgress, completedLessons, totalLessons, progressPercent,
     studyDays, achievements,
     totalAttempts, correctAttempts, stats,
     setCurrentLesson: startLesson, startLesson,
