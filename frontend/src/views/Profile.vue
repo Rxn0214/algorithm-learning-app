@@ -115,10 +115,15 @@ function generateReport() {
       <div class="card">
         <div class="card-title">成就徽章</div>
         <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;">
-          <div v-for="badge in badges" :key="badge.name" class="badge-item">
-            <div class="badge-icon">{{ badge.icon }}</div>
+          <div v-for="badge in badges" :key="badge.name"
+               :class="['badge-item', lesson.achievements_unlocked.includes(badge.key) ? '' : 'badge-locked']">
+            <div class="badge-icon" :style="lesson.achievements_unlocked.includes(badge.key) ? {} : { filter: 'grayscale(1)', opacity: 0.4 }">
+              {{ badge.icon }}
+            </div>
             <div class="badge-name">{{ badge.name }}</div>
             <div class="badge-desc">{{ badge.desc }}</div>
+            <div v-if="!lesson.achievements_unlocked.includes(badge.key)" style="font-size:10px;color:#999;margin-top:2px;">🔒 未解锁</div>
+            <div v-else style="font-size:10px;color:#06D6A0;margin-top:2px;">✅ 已解锁</div>
           </div>
         </div>
       </div>

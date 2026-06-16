@@ -2,27 +2,36 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { lessons as lessonData } from '../data/lessons'
 
-const PROGRESS_KEY = 'lesson_progress'
-const STATS_KEY = 'answer_stats'
+function getUserKey() {
+  // 从 localStorage 读取当前登录用户
+  try {
+    const u = JSON.parse(localStorage.getItem('current_user') || 'null')
+    return u?.studentId || 'anonymous'
+  } catch { return 'anonymous' }
+}
 
 function loadProgress() {
+  const key = getUserKey()
   try {
-    return JSON.parse(localStorage.getItem(PROGRESS_KEY) || '{}')
+    return JSON.parse(localStorage.getItem('lesson_progress_' + key) || '{}')
   } catch { return {} }
 }
 
 function saveProgress(data) {
-  localStorage.setItem(PROGRESS_KEY, JSON.stringify(data))
+  const key = getUserKey()
+  localStorage.setItem('lesson_progress_' + key, JSON.stringify(data))
 }
 
 function loadStats() {
+  const key = getUserKey()
   try {
-    return JSON.parse(localStorage.getItem(STATS_KEY) || '{"total":0,"correct":0}')
+    return JSON.parse(localStorage.getItem('answer_stats_' + key) || '{"total":0,"correct":0}')
   } catch { return { total: 0, correct: 0 } }
 }
 
 function saveStats(data) {
-  localStorage.setItem(STATS_KEY, JSON.stringify(data))
+  const key = getUserKey()
+  localStorage.setItem('answer_stats_' + key, JSON.stringify(data))
 }
 
 /**
@@ -169,9 +178,10 @@ export const useLessonStore = defineStore('lesson', () => {
         createdAt: new Date().toISOString()
       })
       try {
-        const saved = JSON.parse(localStorage.getItem('wrong_answers') || '[]')
+        const uKey = getUserKey()
+        const saved = JSON.parse(localStorage.getItem('wrong_answers_' + uKey) || '[]')
         saved.push(wrongAnswers.value[wrongAnswers.value.length - 1])
-        localStorage.setItem('wrong_answers', JSON.stringify(saved))
+        localStorage.setItem('wrong_answers_' + uKey, JSON.stringify(saved))
       } catch { /* ignore */ }
     }
 
@@ -188,22 +198,57 @@ export const useLessonStore = defineStore('lesson', () => {
 
   function fetchWrongAnswers() {
     try {
-      const saved = JSON.parse(localStorage.getItem('wrong_answers') || '[]')
+      const uKey = getUserKey()
+      const saved = JSON.parse(localStorage.getItem('wrong_answers_' + uKey) || '[]')
       wrongAnswers.value = saved
     } catch { wrongAnswers.value = [] }
   }
 
+  // 学习天数追踪
+  function recordStudyDay() {
+    const today = new Date().toISOString().slice(0, 10) // '2026-06-16'
+    try {
+      const days = JSON.parse(localStorage.getItem('study_days_' + getUserKey()) || '[]')
+      if (!days.includes(today)) {
+        days.push(today)
+        localStorage.setItem('study_days_' + getUserKey(), JSON.stringify(days))
+        studyDays.value = days.length
+      }
+    } catch { /* ignore */ }
+  }
+
+  function loadStudyDays() {
+    try {
+      const days = JSON.parse(localStorage.getItem('study_days_' + getUserKey()) || '[]')
+      studyDays.value = days.length
+    } catch { studyDays.value = 0 }
+  }
+
+  // 成就计算
+  const achievements_unlocked = computed(() => {
+    const result = []
+    if (completedLessons.value >= 1) result.push('beginner')
+    if (studyDays.value >= 7) result.push('diligent')
+    const total = totalAttempts.value
+    const correct = correctAttempts.value
+    if (total >= 5 && (correct / total) >= 0.9) result.push('accurate')
+    if (completedLessons.value >= 8) result.push('master')
+    return result
+  })
+
   function fetchStats() {
     stats.value = loadStats()
+    loadStudyDays()
   }
 
   return {
     lessons, currentLessonId, currentLesson, wrongAnswers,
     savedProgress, completedLessons, totalLessons, progressPercent,
-    studyDays, achievements,
+    studyDays, achievements_unlocked,
     totalAttempts, correctAttempts, stats,
     setCurrentLesson: startLesson, startLesson,
     markCompleted, submitAnswer, updateLessonProgress,
-    fetchProgress, updateProgress, fetchWrongAnswers, fetchStats
+    fetchProgress, updateProgress, fetchWrongAnswers, fetchStats,
+    recordStudyDay, loadStudyDays
   }
 })

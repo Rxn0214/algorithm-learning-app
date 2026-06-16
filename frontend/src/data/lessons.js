@@ -135,10 +135,16 @@ export const lessons = [
         explanation: '顺序结构是程序最基本的控制结构，程序默认按照代码的书写顺序依次执行。'
       },
       {
+        type: '填空题', typeClass: 'type-fill',
+        text: '顺序结构中，语句按照____顺序依次执行，从____语句开始，逐条执行直到最后一条。',
+        answer: '书写 第一条',
+        explanation: '顺序结构按代码书写顺序执行，从第一条开始到结束，是最简单的程序结构。'
+      },
+      {
         type: '分析题', typeClass: 'type-analysis',
-        text: '说明顺序结构的执行特点。',
-        answer: '顺序结构的特点是语句按照书写顺序从上到下依次执行，前面的语句执行完才能执行后面的语句，没有分支和跳转。',
-        explanation: '顺序结构是最简单的程序结构，理解顺序结构是学习分支和循环结构的基础。'
+        text: '说明顺序结构的执行特点，并举一个生活中的例子。',
+        answer: '顺序结构的特点是语句按照书写顺序从上到下依次执行，前面的语句执行完才能执行后面的语句，没有分支和跳转。\n\n生活例子：早上起床的流程——①睁开眼睛 → ②刷牙洗脸 → ③换衣服 → ④吃早餐 → ⑤出门上学。每一步按顺序完成，不能跳过。',
+        explanation: '顺序结构就像按照步骤清单做事，做完一件再做下一件。理解顺序结构是学习分支和循环的基础。'
       }
     ]
   },
@@ -163,10 +169,16 @@ export const lessons = [
         explanation: 'if-else语句根据条件判断结果选择执行不同的代码块，是典型的分支结构。'
       },
       {
+        type: '填空题', typeClass: 'type-fill',
+        text: '分支结构中，条件表达式的结果是____值，决定了执行____分支还是____分支。',
+        answer: '布尔 真 假',
+        explanation: '条件表达式产生布尔值（true/false），为真执行if分支，为假执行else分支。'
+      },
+      {
         type: '编程题', typeClass: 'type-code',
-        text: '用伪代码描述"比较两个数大小"的算法。',
-        answer: '输入：两个数a和b\n如果 a > b 则\n  输出 a + "大于" + b\n否则如果 a < b 则\n  输出 a + "小于" + b\n否则\n  输出 a + "等于" + b',
-        explanation: '比较两个数的大小需要用到分支结构，分别处理大于、小于和等于三种情况。'
+        text: '用伪代码描述"判断一个数是否为偶数"的算法。',
+        answer: '输入：整数n\n如果 n % 2 == 0 则\n  输出 "是偶数"\n否则\n  输出 "是奇数"',
+        explanation: '判断偶数：用该数除以2，余数为0则是偶数。这里使用了分支结构来处理两种情况。'
       }
     ]
   },
@@ -195,6 +207,12 @@ export const lessons = [
         text: 'for循环通常由____、____和____三部分组成。',
         answer: '初始化 条件判断 变量更新',
         explanation: 'for循环的三个组成部分：初始化（定义循环变量初始值）、条件判断（决定是否继续循环）、变量更新（改变循环变量的值）。'
+      },
+      {
+        type: '分析题', typeClass: 'type-analysis',
+        text: 'for循环和while循环有什么不同？分别适合什么场景？',
+        answer: 'for循环：已知循环次数时使用，结构紧凑，初始化、条件、更新写在一起，适合遍历数组和执行固定次数操作。\n\nwhile循环：未知循环次数时使用，条件为真就继续执行，适合等待用户正确输入、处理不确定长度的数据等场景。',
+        explanation: '选择哪种循环取决于你是否提前知道循环次数。知道次数用for，不知道次数用while。'
       }
     ]
   },
@@ -212,6 +230,13 @@ export const lessons = [
     ],
     questions: [
       {
+        type: '选择题', typeClass: 'type-choice',
+        text: '程序中出现"除以零"的错误属于？',
+        options: ['语法错误', '逻辑错误', '运行错误', '编译错误'],
+        answer: 2,
+        explanation: '运行错误是程序运行时出现的问题，如除以零、文件不存在等。语法错误在运行前就被发现，逻辑错误是结果不对。'
+      },
+      {
         type: '分析题', typeClass: 'type-analysis',
         text: '分析顺序、分支、循环三种结构在程序中的作用。',
         answer: '顺序结构是程序的基础骨架，决定了代码的执行顺序；分支结构让程序能够根据不同条件做出不同反应；循环结构让程序能够重复执行特定任务。三种结构配合使用，可以解决任何复杂的编程问题。',
@@ -219,19 +244,19 @@ export const lessons = [
       },
       {
         type: '编程题', typeClass: 'type-code',
-        text: '用伪代码描述"计算阶乘"的算法。',
-        answer: '输入：正整数n\nresult = 1\nfor i = 1 to n:\n  result = result * i\n输出 result',
-        explanation: '阶乘n! = 1×2×3×...×n，可以用for循环将1到n的所有整数相乘得到结果。'
+        text: '用伪代码描述"找出1到100中所有能被3整除的数"的算法。',
+        answer: 'for i = 1 to 100:\n  如果 i % 3 == 0 则\n    输出 i',
+        explanation: '这道题综合运用了循环结构（for遍历1-100）和分支结构（if判断能否被3整除），体现了三种结构的组合使用。'
       }
     ]
   }
 ]
 
 export const badges = [
-  { icon: '🌟', name: '初学者', desc: '完成首次学习' },
-  { icon: '🔥', name: '勤奋者', desc: '连续学习7天' },
-  { icon: '🎯', name: '精准者', desc: '答题正确率90%+' },
-  { icon: '🏆', name: '学霸', desc: '完成全部课时' }
+  { key: 'beginner', icon: '🌟', name: '初学者', desc: '完成首次学习' },
+  { key: 'diligent', icon: '🔥', name: '勤奋者', desc: '累计学习7天' },
+  { key: 'accurate', icon: '🎯', name: '精准者', desc: '答题正确率90%+' },
+  { key: 'master', icon: '🏆', name: '学霸', desc: '完成全部8个课时' }
 ]
 
 export const quickEntries = [
