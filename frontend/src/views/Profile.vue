@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useUserStore } from '../stores/user'
 import { useLessonStore } from '../stores/lesson'
 import { badges } from '../data/lessons'
+import { fetchUserPoints } from '../services/forum'
 import AppHeader from '../components/AppHeader.vue'
 import NavBar from '../components/NavBar.vue'
 
@@ -14,11 +15,29 @@ const lesson = useLessonStore()
 const showWrongAnswers = ref(false)
 const showReport = ref(false)
 const learningReport = ref(null)
+const apiPoints = ref(0)
+const apiLevel = ref('新手学员')
+
+// 等级颜色
+function levelColor(level) {
+  const map = {
+    '年级楷模': '#FF6B6B', '班级学霸': '#FFD93D',
+    '学习达人': '#6BCB77', '积极分子': '#4D96FF',
+    '勤奋学子': '#9B59B6', '新手学员': '#95A5A6'
+  }
+  return map[level] || '#95A5A6'
+}
 
 // 页面加载时同步最新数据
-onMounted(() => {
+onMounted(async () => {
   lesson.fetchStats()
   lesson.fetchWrongAnswers()
+  // 从后端获取最新积分
+  const pts = await fetchUserPoints()
+  if (pts.success) {
+    apiPoints.value = pts.points || 0
+    apiLevel.value = pts.level || '新手学员'
+  }
 })
 
 // 正确率：使用真实答题统计
@@ -61,7 +80,8 @@ function generateReport() {
     wrongCount: lesson.wrongAnswers.length,
     rate: correctRate.value,
     hours: studyHours.value,
-    level: user.currentUser?.level || '新手学员'
+    level: apiLevel.value,
+    points: apiPoints.value
   }
   showReport.value = true
 }
@@ -84,8 +104,16 @@ function generateReport() {
     <div class="content">
       <div class="card" style="text-align: center; padding: 30px 20px;">
         <div class="post-avatar" style="width: 80px; height: 80px; font-size: 32px; margin: 0 auto 16px;">{{ user.currentUser?.name?.charAt(0) || '?' }}</div>
-        <h2 style="font-size: 20px; font-weight: 600; margin-bottom: 8px;">{{ user.currentUser?.name || '用户' }}</h2>
-        <p style="font-size: 14px; color: #666;">学号：{{ user.currentUser?.studentId || '' }}</p>
+        <h2 style="font-size: 20px; font-weight: 600; margin-bottom: 4px;">{{ user.currentUser?.name || '用户' }}</h2>
+        <p style="font-size: 14px; color: #666; margin-bottom: 8px;">学号：{{ user.currentUser?.studentId || '' }}</p>
+        <div style="display: flex; justify-content: center; gap: 12px; margin-top: 8px;">
+          <span :style="{ background: levelColor(apiLevel), color: 'white', padding: '4px 14px', borderRadius: '12px', fontSize: '13px', fontWeight: 600 }">
+            {{ apiLevel }}
+          </span>
+          <span style="background: linear-gradient(135deg, #FFD700, #FFA500); color: white; padding: 4px 14px; border-radius: 12px; font-size: 13px; font-weight: 600;">
+            ⭐ {{ apiPoints }}积分
+          </span>
+        </div>
       </div>
 
       <div class="card">
@@ -183,6 +211,14 @@ function generateReport() {
           <div class="stat-item" style="padding: 8px 0;">
             <span class="stat-label">学习时长</span>
             <span class="stat-value">{{ learningReport.hours }}</span>
+          </div>
+          <div class="stat-item" style="padding: 8px 0;">
+            <span class="stat-label">当前积分</span>
+            <span class="stat-value" style="color: #FFA500;">⭐ {{ learningReport.points }}</span>
+          </div>
+          <div class="stat-item" style="padding: 8px 0;">
+            <span class="stat-label">等级</span>
+            <span class="stat-value" :style="{ color: levelColor(learningReport.level) }">{{ learningReport.level }}</span>
           </div>
           <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #D0E8F7; font-size: 12px; color: #666; line-height: 1.6;">
             💡 <strong>学习建议：</strong>

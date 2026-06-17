@@ -2,13 +2,16 @@
 import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useLessonStore } from '../stores/lesson'
+import { useUserStore } from '../stores/user'
 import { lessons } from '../data/lessons'
+import { awardPoints } from '../services/forum'
 import AppHeader from '../components/AppHeader.vue'
 import NavBar from '../components/NavBar.vue'
 
 const route = useRoute()
 const router = useRouter()
 const lessonStore = useLessonStore()
+const userStore = useUserStore()
 
 const selectedAnswers = ref({})
 const textAnswers = ref({})       // 非选择题的文本答案
@@ -146,6 +149,23 @@ function submitAnswer(qIndex) {
 function startChat(agentType) {
   router.push(`/chat/${agentType}?lesson=${currentLesson.value.id}`)
 }
+
+// 课时进度变化时检查是否完成，发放积分
+watch(lessonProgress, async (newVal, oldVal) => {
+  if (newVal >= 100 && oldVal < 100) {
+    const lessonId = currentLesson.value.id
+    const uid = userStore.getDataKey()
+    const awardKey = `lesson_points_awarded_${uid}_${lessonId}`
+
+    // 检查是否已发放过积分（每课时只发一次）
+    if (!localStorage.getItem(awardKey)) {
+      const result = await awardPoints(10)
+      if (result.success && !result.offline) {
+        localStorage.setItem(awardKey, '1')
+      }
+    }
+  }
+})
 </script>
 
 <template>

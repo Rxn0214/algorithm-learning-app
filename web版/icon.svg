@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00B4D8"/>
+      <stop offset="100%" style="stop-color:#48CAE4"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="100" fill="url(#bg)"/>
+  <text x="256" y="290" text-anchor="middle" dominant-baseline="central"
+        font-family="Arial, sans-serif" font-size="280" font-weight="bold" fill="white">算</text>
+  <circle cx="420" cy="100" r="60" fill="#FFD166" opacity="0.9"/>
+  <text x="420" y="108" text-anchor="middle" dominant-baseline="central"
+        font-family="Arial, sans-serif" font-size="60" fill="#023E8A">AI</text>
+</svg>

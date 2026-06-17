@@ -95,6 +95,21 @@ export const useUserStore = defineStore('user', () => {
     return { success: false, error: result.error || '登录失败' }
   }
 
+  async function refreshPoints() {
+    try {
+      const { fetchUserPoints } = await import('../services/forum')
+      const result = await fetchUserPoints()
+      if (result.success && !result.offline && currentUser.value) {
+        currentUser.value = {
+          ...currentUser.value,
+          points: result.points,
+          level: result.level
+        }
+        localStorage.setItem(CURRENT_KEY, JSON.stringify(currentUser.value))
+      }
+    } catch { /* ignore */ }
+  }
+
   function logout() {
     currentUser.value = null
     isOffline.value = false
@@ -108,6 +123,6 @@ export const useUserStore = defineStore('user', () => {
 
   return {
     currentUser, isLoggedIn, isRegistering, isLoggingIn, isOffline,
-    register, login, logout, getDataKey
+    register, login, logout, getDataKey, refreshPoints
   }
 })
