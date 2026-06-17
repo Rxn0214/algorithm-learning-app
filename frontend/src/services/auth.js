@@ -9,7 +9,7 @@ import { api } from './api'
  */
 export async function registerUser(name, studentId) {
   try {
-    const res = await api.post('/api/auth/register', { name, studentId }, { timeout: 5000 })
+    const res = await api.post('/api/auth/register', { name, studentId }, { timeout: 15000 })
     if (res.data?.user) {
       return { success: true, user: res.data.user }
     }
@@ -27,7 +27,7 @@ export async function registerUser(name, studentId) {
  */
 export async function loginUser(studentId) {
   try {
-    const res = await api.post('/api/auth/login', { studentId }, { timeout: 5000 })
+    const res = await api.post('/api/auth/login', { studentId }, { timeout: 15000 })
     if (res.data?.user) {
       return { success: true, user: res.data.user }
     }
