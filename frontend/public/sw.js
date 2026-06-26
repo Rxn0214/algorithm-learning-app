@@ -1,6 +1,6 @@
 // 算法学习助手 Service Worker
 // 版本号更新会自动清理旧缓存
-const CACHE_VERSION = 'v2'
+const CACHE_VERSION = 'v4'
 const CACHE_NAME = 'algorithm-app-' + CACHE_VERSION
 
 // 只缓存静态资源，不缓存 HTML（HTML 始终从网络获取）

@@ -126,13 +126,11 @@ export const useLessonStore = defineStore('lesson', () => {
   function updateLessonProgress(id, pct) {
     const key = String(id)
     const prev = savedProgress.value[key] || { started: true, completed: false, progress: 0 }
-    // 创建新对象引用触发 Vue ref 响应
     const current = {
       started: true,
       completed: pct >= 100 || prev.completed,
       progress: Math.max(prev.progress || 0, pct)
     }
-    // 替换整个 value 对象确保响应式更新
     savedProgress.value = { ...savedProgress.value, [key]: current }
     saveProgress(savedProgress.value)
   }
@@ -148,18 +146,14 @@ export const useLessonStore = defineStore('lesson', () => {
 
     if (question.answer !== undefined) {
       if (question.type === '选择题') {
-        // 选择题：精确比较索引
         correct = answer === question.answer
       } else if (question.type === '填空题') {
-        // 填空题：灵活匹配
         correct = checkFillAnswer(answer, question.answer)
       } else {
-        // 编程题/分析题：不自动判对错，返回 null
         correct = null
       }
     }
 
-    // 记录答题统计
     stats.value.total = (stats.value.total || 0) + 1
     if (correct === true) {
       stats.value.correct = (stats.value.correct || 0) + 1
@@ -204,9 +198,8 @@ export const useLessonStore = defineStore('lesson', () => {
     } catch { wrongAnswers.value = [] }
   }
 
-  // 学习天数追踪
   function recordStudyDay() {
-    const today = new Date().toISOString().slice(0, 10) // '2026-06-16'
+    const today = new Date().toISOString().slice(0, 10)
     try {
       const days = JSON.parse(localStorage.getItem('study_days_' + getUserKey()) || '[]')
       if (!days.includes(today)) {
@@ -224,7 +217,6 @@ export const useLessonStore = defineStore('lesson', () => {
     } catch { studyDays.value = 0 }
   }
 
-  // 成就计算
   const achievements_unlocked = computed(() => {
     const result = []
     if (completedLessons.value >= 1) result.push('beginner')
@@ -241,6 +233,14 @@ export const useLessonStore = defineStore('lesson', () => {
     loadStudyDays()
   }
 
+  // 切换账号后重新加载当前用户的所有数据
+  function reloadUserData() {
+    savedProgress.value = loadProgress()
+    stats.value = loadStats()
+    loadStudyDays()
+    fetchWrongAnswers()
+  }
+
   return {
     lessons, currentLessonId, currentLesson, wrongAnswers,
     savedProgress, completedLessons, totalLessons, progressPercent,
@@ -249,6 +249,7 @@ export const useLessonStore = defineStore('lesson', () => {
     setCurrentLesson: startLesson, startLesson,
     markCompleted, submitAnswer, updateLessonProgress,
     fetchProgress, updateProgress, fetchWrongAnswers, fetchStats,
-    recordStudyDay, loadStudyDays
+    recordStudyDay, loadStudyDays,
+    reloadUserData
   }
 })

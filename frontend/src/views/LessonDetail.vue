@@ -23,6 +23,27 @@ const currentLesson = computed(() => {
   return lessons.find(l => l.id === id) || lessons[0]
 })
 
+// 任务统计
+const totalQuestions = computed(() => currentLesson.value.questions.length)
+const answeredCount = computed(() => {
+  return currentLesson.value.questions.filter((q, i) => feedback.value[i]?.show).length
+})
+const remainingCount = computed(() => totalQuestions.value - answeredCount.value)
+
+// 每道题的状态
+function questionStatus(qIndex) {
+  const fb = feedback.value[qIndex]
+  if (!fb?.show) return 'pending'
+  if (fb.correct === true) return 'correct'
+  if (fb.correct === false) return 'wrong'
+  return 'submitted' // 编程题/分析题（不判对错）
+}
+
+function recalcProgress() {
+  if (totalQuestions.value === 0) return 0
+  return Math.round((answeredCount.value / totalQuestions.value) * 100)
+}
+
 // 获取当前用户 + 课时的答案存储 key
 function getAnswerKey(lessonId) {
   const user = JSON.parse(localStorage.getItem('current_user') || 'null')
@@ -104,9 +125,6 @@ function submitAnswer(qIndex) {
         correctAnswer: q.answer,
         explanation: q.explanation || (result?.correct ? '回答正确！' : '答案有误，请对照正确答案。')
       }
-      if (result?.correct) {
-        lessonProgress.value = Math.min(100, lessonProgress.value + 15)
-      }
     } else {
       // 编程题/分析题：不自动判对错，显示参考答案
       feedback.value[qIndex] = {
@@ -115,8 +133,9 @@ function submitAnswer(qIndex) {
         correctAnswer: q.answer,
         explanation: q.explanation || '请对照参考答案检查你的回答。'
       }
-      lessonProgress.value = Math.min(100, lessonProgress.value + 15)
     }
+    // 进度基于已答题数计算（不再固定 +15）
+    lessonProgress.value = recalcProgress()
     lessonStore.updateLessonProgress(lessonId, lessonProgress.value)
     saveAnswerState(lessonId)
     return
@@ -135,13 +154,13 @@ function submitAnswer(qIndex) {
     explanation: q.explanation
   }
 
-  if (correct) {
-    lessonProgress.value = Math.min(100, lessonProgress.value + 15)
-  } else {
+  if (!correct) {
     // 记录错题：传递选中的选项文本而非索引
     const selectedText = q.options[selected] || String(selected)
     lessonStore.submitAnswer(qIndex, selectedText, lessonId)
   }
+  // 进度基于已答题数计算
+  lessonProgress.value = recalcProgress()
   lessonStore.updateLessonProgress(lessonId, lessonProgress.value)
   saveAnswerState(lessonId)
 }
@@ -181,18 +200,52 @@ watch(lessonProgress, async (newVal, oldVal) => {
     </div>
 
     <div class="content">
+      <!-- 任务清单卡片 -->
       <div class="card">
         <div class="lesson-icon" :style="{ background: currentLesson.bg, color: 'white', marginBottom: '12px' }">
           {{ currentLesson.icon }}
         </div>
         <h2 class="lesson-title" style="font-size: 18px;">{{ currentLesson.title }}</h2>
         <p class="lesson-desc" style="margin-bottom: 16px;">{{ currentLesson.desc }}</p>
+
+        <!-- 进度条 -->
         <div class="progress-bar">
           <div class="progress-fill" :style="{ width: lessonProgress + '%' }"></div>
         </div>
-        <div style="display: flex; justify-content: space-between; margin-top: 8px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
           <span style="font-size: 13px; color: #666;">学习进度</span>
-          <span style="font-size: 13px; font-weight: 600; color: var(--primary-color);">{{ lessonProgress }}%</span>
+          <span style="font-size: 20px; font-weight: 700; color: var(--primary-color);">{{ lessonProgress }}%</span>
+        </div>
+
+        <!-- 题目状态列表 -->
+        <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #F0F0F0;">
+          <div style="font-size: 13px; font-weight: 600; color: #333; margin-bottom: 10px;">
+            ✏️ 练习题进度（{{ answeredCount }}/{{ totalQuestions }}）
+          </div>
+          <div v-for="(q, qIndex) in currentLesson.questions" :key="'status-'+qIndex"
+               :class="['task-item', questionStatus(qIndex)]"
+               @click="document.getElementById('q-'+qIndex)?.scrollIntoView({behavior:'smooth',block:'center'})">
+            <span class="task-num">{{ qIndex + 1 }}</span>
+            <span class="task-info">
+              <span class="task-type-label">{{ q.type }}</span>
+              <span class="task-text">{{ q.text.slice(0, 20) }}{{ q.text.length > 20 ? '...' : '' }}</span>
+            </span>
+            <span class="task-status-icon">
+              <template v-if="questionStatus(qIndex) === 'correct'">✅</template>
+              <template v-else-if="questionStatus(qIndex) === 'wrong'">❌</template>
+              <template v-else-if="questionStatus(qIndex) === 'submitted'">📝</template>
+              <template v-else>⬜</template>
+            </span>
+          </div>
+        </div>
+
+        <!-- 完成提示 -->
+        <div v-if="remainingCount > 0" style="background: #FFF8E1; border-radius: 10px; padding: 10px 14px; margin-top: 12px; font-size: 12px; color: #E65100; line-height: 1.6; text-align: center;">
+          💡 完成全部 <strong>{{ totalQuestions }}</strong> 道练习题即可完成本课时<br>
+          还差 <strong>{{ remainingCount }}</strong> 题
+        </div>
+        <div v-else style="background: #E8F5E9; border-radius: 10px; padding: 10px 14px; margin-top: 12px; font-size: 13px; color: #2E7D32; line-height: 1.6; text-align: center; font-weight: 600;">
+          🎉 全部题目已完成！本课时学习完毕！
         </div>
       </div>
 
@@ -220,10 +273,10 @@ watch(lessonProgress, async (newVal, oldVal) => {
 
       <div class="card">
         <div class="card-title">练习题</div>
-        <div v-for="(q, qIndex) in currentLesson.questions" :key="qIndex" class="question-item">
+        <div v-for="(q, qIndex) in currentLesson.questions" :key="qIndex" :id="'q-'+qIndex" class="question-item">
           <div class="question-header">
             <span :class="['question-type', q.typeClass]">{{ q.type }}</span>
-            <span style="font-size: 12px; color: #999;">第{{ qIndex + 1 }}题</span>
+            <span style="font-size: 12px; color: #999;">第{{ qIndex + 1 }}题 / 共{{ totalQuestions }}题</span>
           </div>
           <div class="question-text">{{ q.text }}</div>
 
@@ -296,3 +349,78 @@ watch(lessonProgress, async (newVal, oldVal) => {
     <NavBar />
   </div>
 </template>
+
+<style scoped>
+/* 任务清单样式 */
+.task-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.task-item:hover {
+  background: #F5F5F5;
+}
+.task-item.correct {
+  background: #F0FFF4;
+}
+.task-item.wrong {
+  background: #FFF5F5;
+}
+.task-item.submitted {
+  background: #F0F9FF;
+}
+.task-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #F0F0F0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: #666;
+  flex-shrink: 0;
+}
+.task-item.correct .task-num {
+  background: #C8E6C9;
+  color: #2E7D32;
+}
+.task-item.wrong .task-num {
+  background: #FFCDD2;
+  color: #C62828;
+}
+.task-item.submitted .task-num {
+  background: #BBDEFB;
+  color: #1565C0;
+}
+.task-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.task-type-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: #999;
+  text-transform: uppercase;
+}
+.task-text {
+  font-size: 13px;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.task-status-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+</style>

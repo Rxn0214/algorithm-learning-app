@@ -16,6 +16,8 @@ const apiPoints = ref(0)
 const apiLevel = ref('新手学员')
 
 onMounted(async () => {
+  // 切换账号后重新加载当前用户数据
+  lesson.reloadUserData()
   const pts = await fetchUserPoints()
   if (pts.success) {
     apiPoints.value = pts.points || 0
@@ -35,6 +37,14 @@ function goToLesson(l) {
 }
 
 const isNewUser = computed(() => lesson.completedLessons === 0)
+
+const progressTip = computed(() => {
+  const pct = lesson.progressPercent
+  if (pct >= 100) return '🎉 全部完成！太棒了！'
+  if (pct >= 50) return '进度过半，坚持就是胜利！'
+  if (pct > 0) return `继续加油，已完成 ${lesson.completedLessons}/${lesson.totalLessons}`
+  return '开始你的第一课吧！'
+})
 
 function navigateTo(route) {
   router.push(route)
@@ -59,22 +69,41 @@ function navigateTo(route) {
       </div>
 
       <div class="card">
-        <div class="card-title">学习进度</div>
+        <div class="card-title">📊 学习进度</div>
+
+        <!-- 进度条 -->
         <div class="progress-bar">
           <div class="progress-fill" :style="{ width: lesson.progressPercent + '%' }"></div>
         </div>
-        <div class="stat-item">
-          <span class="stat-label">已完成课时</span>
-          <span class="stat-value">{{ lesson.completedLessons }}/{{ lesson.totalLessons }}</span>
+        <div style="text-align: center; font-size: 14px; color: #666; margin: 8px 0;">
+          {{ progressTip }}
         </div>
-        <div class="stat-item">
-          <span class="stat-label">获得成就</span>
-          <span class="stat-value">{{ isNewUser ? 0 : 1 }}</span>
+
+        <!-- 课时圆点指示器 -->
+        <div style="font-size: 13px; color: #999; text-align: center; margin-bottom: 8px;">课时进度</div>
+        <div class="lesson-dots">
+          <div v-for="(l, index) in lesson.lessons" :key="l.id"
+               :class="['lesson-dot', l.status]"
+               @click="goToLesson(l)"
+               :title="l.title + ' - ' + l.statusText">
+            {{ index + 1 }}
+          </div>
         </div>
-        <div class="stat-item">
-          <span class="stat-label">学习天数</span>
-          <span class="stat-value">{{ isNewUser ? '0天' : (lesson.studyDays + '天' || '1天') }}</span>
+        <div style="display: flex; justify-content: center; gap: 16px; font-size: 11px; color: #999; margin-top: 6px;">
+          <span>🟢 已完成</span>
+          <span>🟠 进行中</span>
+          <span>⚪ 未开始</span>
         </div>
+
+        <!-- 提示 -->
+        <div style="background: #F0F9FF; border-radius: 10px; padding: 10px 14px; margin-top: 14px; font-size: 12px; color: #0077B6; line-height: 1.6;">
+          💡 完成每个课时的<strong>全部题目</strong>后，该课时自动标记为"已完成"
+        </div>
+
+        <!-- 跳转按钮 -->
+        <button class="btn-secondary" style="width: 100%; margin-top: 12px;" @click="router.push('/lessons')">
+          查看全部课程 →
+        </button>
       </div>
 
       <div class="card">
@@ -106,3 +135,46 @@ function navigateTo(route) {
     <NavBar />
   </div>
 </template>
+
+<style scoped>
+.lesson-dots {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin: 10px 0;
+}
+.lesson-dot {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  user-select: none;
+}
+.lesson-dot.status-completed {
+  background: #06D6A0;
+  color: white;
+  box-shadow: 0 2px 8px rgba(6, 214, 160, 0.3);
+}
+.lesson-dot.status-progress {
+  background: #FFD166;
+  color: #333;
+  box-shadow: 0 2px 8px rgba(255, 209, 102, 0.3);
+}
+.lesson-dot.status-pending {
+  background: #E8E8E8;
+  color: #999;
+  border: 2px dashed #CCC;
+}
+.lesson-dot:hover {
+  transform: scale(1.15);
+}
+.lesson-dot:active {
+  transform: scale(0.95);
+}
+</style>

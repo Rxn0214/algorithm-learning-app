@@ -7,7 +7,7 @@ export const api = axios.create({
 })
 
 api.interceptors.request.use(config => {
-  const user = localStorage.getItem('userInfo')
+  const user = localStorage.getItem('current_user')
   if (user) {
     const { studentId } = JSON.parse(user)
     config.headers['X-Student-Id'] = studentId

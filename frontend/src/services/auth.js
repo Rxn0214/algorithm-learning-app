@@ -9,15 +9,21 @@ import { api } from './api'
  */
 export async function registerUser(name, studentId) {
   try {
-    const res = await api.post('/api/auth/register', { name, studentId }, { timeout: 15000 })
+    const res = await api.post('/api/auth/register', { name, studentId }, { timeout: 10000 })
     if (res.data?.user) {
       return { success: true, user: res.data.user }
     }
-    return { success: false, error: '注册失败' }
+    return { success: false, error: '注册失败：服务器返回异常' }
   } catch (e) {
-    // 后端不可用，回退到本地注册
-    console.warn('Backend auth unavailable, using local register')
-    return localRegister(name, studentId)
+    console.error('Register error:', e)
+    // 网络错误才回退本地，其他错误显示出来
+    if (e.code === 'ERR_NETWORK' || e.code === 'ECONNABORTED' || !e.response) {
+      console.warn('Backend auth unavailable, using local register')
+      return localRegister(name, studentId)
+    }
+    // 服务器返回了错误（如 400、404 等），显示给用户
+    const msg = e.response?.data?.detail || '注册请求失败，请重试'
+    return { success: false, error: msg }
   }
 }
 
@@ -27,19 +33,23 @@ export async function registerUser(name, studentId) {
  */
 export async function loginUser(studentId) {
   try {
-    const res = await api.post('/api/auth/login', { studentId }, { timeout: 15000 })
+    const res = await api.post('/api/auth/login', { studentId }, { timeout: 10000 })
     if (res.data?.user) {
       return { success: true, user: res.data.user }
     }
-    return { success: false, error: '登录失败' }
+    return { success: false, error: '登录失败：服务器返回异常' }
   } catch (e) {
-    // 404 = 未注册
+    console.error('Login error:', e)
     if (e.response?.status === 404) {
       return { success: false, error: '该学号未注册，请先注册账号' }
     }
-    // 网络错误，回退到本地登录
-    console.warn('Backend auth unavailable, using local login')
-    return localLogin(studentId)
+    // 网络错误回退本地
+    if (e.code === 'ERR_NETWORK' || e.code === 'ECONNABORTED' || !e.response) {
+      console.warn('Backend auth unavailable, using local login')
+      return localLogin(studentId)
+    }
+    const msg = e.response?.data?.detail || '登录请求失败，请重试'
+    return { success: false, error: msg }
   }
 }
 
